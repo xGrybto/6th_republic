@@ -1,0 +1,168 @@
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity ^0.8.20;
+
+import {ERC721} from "@openzeppelin/token/ERC721/ERC721.sol";
+import "@openzeppelin/access/Ownable.sol";
+import "@openzeppelin/utils/Strings.sol";
+import "@openzeppelin/utils/Base64.sol";
+
+contract SixRPassport is ERC721, Ownable {
+    using Strings for uint256;
+
+    event DelegationTo(
+        address indexed citizen,
+        address indexed delegatedCitizen
+    );
+
+    event RevokeDelegationTo(
+        address indexed citizen,
+        address indexed delegatedCitizen
+    );
+
+    struct PassportAttributes {
+        string name;
+        string surname;
+        string nationality;
+        string birthDate;
+        string birthPlace;
+        string height;
+    }
+
+    uint256 private s_tokenIds;
+    mapping(uint256 => PassportAttributes) private s_tokenAttributes;
+
+    //Delegation attributes
+    mapping(address => address) private s_delegators;
+    mapping(address => uint256) private s_votingPowers;
+
+    modifier ownsPassport() {
+        require(
+            balanceOf(msg.sender) == 1,
+            "The citizen doesn't own a SixRPassport SBT"
+        );
+        _;
+    }
+
+    constructor() ERC721("6RVote", "6R") Ownable(msg.sender) {
+        s_tokenIds = 0;
+    }
+
+    // What if there is an error at the moment of a mint
+    function safeMint(
+        address to,
+        string memory name,
+        string memory surname,
+        string memory nationality,
+        string memory birthDate,
+        string memory birthPlace,
+        string memory height
+    ) public onlyOwner returns (uint256) {
+        require(balanceOf(to) == 0, "This citizen has already a 6R passport");
+
+        s_tokenIds++;
+
+        _safeMint(to, s_tokenIds);
+        s_votingPowers[to] = 1;
+
+        //TODO : verification of correct data eg: nationality with Enum, date format)
+        s_tokenAttributes[s_tokenIds] = PassportAttributes(
+            name,
+            surname,
+            nationality,
+            birthDate,
+            birthPlace,
+            height
+        );
+
+        return s_tokenIds;
+    }
+
+    function delegateVoteTo(address to) public ownsPassport {
+        require(
+            s_delegators[msg.sender] != address(0),
+            "Your vote has already been delegated"
+        );
+        require(
+            balanceOf(to) == 1,
+            "This address is not eligible to receive vote"
+        );
+
+        s_delegators[msg.sender] = to;
+        s_votingPowers[to]++;
+
+        emit DelegationTo(msg.sender, to);
+    }
+
+    function revokeVote() public ownsPassport {
+        address revokedAddress = s_delegators[msg.sender];
+        require(revokedAddress == address(0), "Your vote is not delegated");
+
+        s_delegators[msg.sender] = address(0);
+        s_votingPowers[revokedAddress]--;
+
+        emit RevokeDelegationTo(msg.sender, revokedAddress);
+    }
+
+    function tokenURI(
+        uint256 tokenId
+    ) public view override returns (string memory) {
+        // require(s_tokenAttributes[tokenId], "Token does not exist");
+
+        PassportAttributes memory pAttr = s_tokenAttributes[tokenId];
+
+        // Génération du JSON
+        string memory json = string(
+            abi.encode(
+                "{",
+                '"name": "SixRPassport NFT #',
+                tokenId.toString(),
+                '",',
+                '"description": "6R passport stored on-chain",',
+                '"attributes": [',
+                '{ "trait_type": "Name", "value": "',
+                pAttr.name,
+                '" },',
+                '{ "trait_type": "Surname", "value": "',
+                pAttr.surname,
+                '" }',
+                '{ "trait_type": "Nationality", "value": "',
+                pAttr.nationality,
+                '" }',
+                '{ "trait_type": "BirthDate", "value": "',
+                pAttr.birthDate,
+                '" }',
+                '{ "trait_type": "BirthPlace", "value": "',
+                pAttr.birthPlace,
+                '" }',
+                '{ "trait_type": "Height", "value": "',
+                pAttr.height,
+                '" }',
+                "],",
+                '"image": "https://ipfs.io/ipfs/QmSVj85LTpa3nQSo2D7oq5XXKY9xQa4aSz5Rh2u2A5fLKf"',
+                "}"
+            )
+        );
+
+        // Encodage base64
+        string memory encodedJson = Base64.encode(bytes(json));
+
+        return string(abi.encode("data:application/json;base64,", encodedJson));
+    }
+
+    function transferFrom(
+        address, //from,
+        address, //to,
+        uint256 //tokenId
+    ) public pure override {
+        revert("SixRPassport SBT: Tokens are non-transferable");
+    }
+
+    function safeTransferFrom(
+        address, //from,
+        address, //to,
+        uint256, //tokenId,
+        bytes memory //_data
+    ) public pure override {
+        revert("SixRPassport SBT: Tokens are non-transferable");
+    }
+}
