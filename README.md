@@ -39,6 +39,7 @@ Topics to discuss about :
 - How trust a citizen numerical decision (vote, delegation, signature) ? Can we trust current KYC model ?
   Idea #1 : Each citizen receive an SBT ID card in their wallet (could be specific wallet for election purpose) when they create the real one, delivered by the government. Each decision need to be done with a biometric verification. 
 - Is it fair and not risky to give to each citizen a voting power of one ? If not, how can we fairly adjust voting power to the right persons (which is hard to define)/the experts in the dedicated domain of the proposal, ...
+- How can we deal with the privacy (of voting, delegating, ...) => ZKPs ?
 
 
 ## First draft 
