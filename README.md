@@ -42,8 +42,56 @@ Topics to discuss about :
 
 
 ## First draft 
-
+### 6RPassport
 The following principles must be implemented :
-- Voting power of one for each address that initiates
+- Eligibility of voting for citizen who has a 6RPassport SBT delivered by designated entity (eg: administration)
+- Voting power of one for each registered citizen
 - Delegate vote to one person
 - Revoke vote to one person
+- 6RPassport SBT properties :
+    - Non transferable (by definition "Soul Bound Token")
+    - Mintable by designated entity (aka. Owner)
+
+## Second draft
+### 6RPassport
+- 6RPassport SBT properties :
+    - Non transferable (by definition "Soul Bound Token")
+    - Mintable by designated entity (aka. Owner)
+    - ***Burnable when ID card expires***
+- Eligibility of voting for citizen who has a 6RPassport SBT delivered by designated entity (eg: administration)
+- Voting power of one for each registered citizen
+- Delegate vote to one person
+- Revoke vote to one person
+- ***Handle expired/non existent 6RPassport (delegation, ...)***
+
+## Third draft
+### 6RPassport
+- 6RPassport SBT properties :
+    - Non transferable (by definition "Soul Bound Token")
+    - Mintable by designated entity (aka. Owner)
+    - Burnable when ID card expires
+- Eligibility of voting for citizen who has a 6RPassport SBT delivered by designated entity (eg: administration)
+- Voting power of one for each registered citizen
+- Delegate full vote to one person, ***or to one person for each voting category***
+- Revoke vote to one person, ***or to one person for each voting category***
+- Handle expired/non existent 6RPassport (delegation, ...)
+
+## Fourth draft
+### 6RPassport
+- 6RPassport SBT properties :
+    - Non transferable (by definition "Soul Bound Token")
+    - Mintable by designated entity (aka. Owner)
+    - Burnable when ID card expires
+- Eligibility of voting for citizen who has a 6RPassport SBT delivered by designated entity (eg: administration)
+- Voting power of one for each registered citizen
+- Delegate full vote to one person, or to one person for each voting category
+- Revoke vote to one person, or to one person for each voting category
+- Handle expired/non existent 6RPassport (delegation, ...)
+### 6RProposal
+- ***Create a proposal if citizen owns a 6RPassport***
+- ***Signature of a proposal***
+- ***Proposal turn into a bill after thresold of signatures reached.***
+
+## After 
+- Vote for the bill
+- ...
