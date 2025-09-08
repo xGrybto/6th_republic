@@ -32,8 +32,8 @@ contract SixRPassport is ERC721, Ownable {
     mapping(uint256 => PassportAttributes) private s_tokenAttributes;
 
     //Delegation attributes
-    mapping(address => address) private s_delegators;
-    mapping(address => uint256) private s_votingPowers;
+    mapping(address => address) public s_delegators;
+    mapping(address => uint256) public s_votingPowers;
 
     modifier ownsPassport() {
         require(
@@ -50,8 +50,8 @@ contract SixRPassport is ERC721, Ownable {
     // What if there is an error at the moment of a mint
     function safeMint(
         address to,
-        string memory name,
-        string memory surname,
+        string memory p_name,
+        string memory p_surname,
         string memory nationality,
         string memory birthDate,
         string memory birthPlace,
@@ -60,26 +60,26 @@ contract SixRPassport is ERC721, Ownable {
         require(balanceOf(to) == 0, "This citizen has already a 6R passport");
 
         s_tokenIds++;
-
-        _safeMint(to, s_tokenIds);
         s_votingPowers[to] = 1;
 
         //TODO : verification of correct data eg: nationality with Enum, date format)
         s_tokenAttributes[s_tokenIds] = PassportAttributes(
-            name,
-            surname,
+            p_name,
+            p_surname,
             nationality,
             birthDate,
             birthPlace,
             height
         );
 
+        _safeMint(to, s_tokenIds);
+
         return s_tokenIds;
     }
 
     function delegateVoteTo(address to) public ownsPassport {
         require(
-            s_delegators[msg.sender] != address(0),
+            s_delegators[msg.sender] == address(0),
             "Your vote has already been delegated"
         );
         require(
@@ -89,16 +89,18 @@ contract SixRPassport is ERC721, Ownable {
 
         s_delegators[msg.sender] = to;
         s_votingPowers[to]++;
+        s_votingPowers[msg.sender]--;
 
         emit DelegationTo(msg.sender, to);
     }
 
     function revokeVote() public ownsPassport {
         address revokedAddress = s_delegators[msg.sender];
-        require(revokedAddress == address(0), "Your vote is not delegated");
+        require(revokedAddress != address(0), "Your vote is not delegated");
 
         s_delegators[msg.sender] = address(0);
         s_votingPowers[revokedAddress]--;
+        s_votingPowers[msg.sender]++;
 
         emit RevokeDelegationTo(msg.sender, revokedAddress);
     }
@@ -157,12 +159,11 @@ contract SixRPassport is ERC721, Ownable {
         revert("SixRPassport SBT: Tokens are non-transferable");
     }
 
-    function safeTransferFrom(
-        address, //from,
-        address, //to,
-        uint256, //tokenId,
-        bytes memory //_data
-    ) public pure override {
+    function approve(address, uint256) public pure override {
+        revert("SixRPassport SBT: Tokens are non-transferable");
+    }
+
+    function setApprovalForAll(address, bool) public pure override {
         revert("SixRPassport SBT: Tokens are non-transferable");
     }
 }
