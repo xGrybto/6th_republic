@@ -168,4 +168,16 @@ contract SixRPassportTest is Test {
         sixRContract.delegateVoteTo(citizen_3);
         vm.stopPrank();
     }
+
+    function test_tokenURI() public {
+        setUpC1();
+        string memory tokenURI = sixRContract.tokenURI(1);
+
+        assertEq(
+            bytes(tokenURI),
+            bytes(
+                "data:application/json;base64,eyJuYW1lIjogIlNpeFJQYXNzcG9ydCBORlQgIzEiLCJkZXNjcmlwdGlvbiI6ICI2UiBwYXNzcG9ydCBzdG9yZWQgb24tY2hhaW4iLCJhdHRyaWJ1dGVzIjogW3sgInRyYWl0X3R5cGUiOiAiTmFtZSIsICJ2YWx1ZSI6ICJNYXJjIiB9LHsgInRyYWl0X3R5cGUiOiAiU3VybmFtZSIsICJ2YWx1ZSI6ICJKT1RFIiB9eyAidHJhaXRfdHlwZSI6ICJOYXRpb25hbGl0eSIsICJ2YWx1ZSI6ICJGcmFuY2FpcyIgfXsgInRyYWl0X3R5cGUiOiAiQmlydGhEYXRlIiwgInZhbHVlIjogIjAxLzA1LzIwMDAiIH17ICJ0cmFpdF90eXBlIjogIkJpcnRoUGxhY2UiLCAidmFsdWUiOiAiTGlsbGUiIH17ICJ0cmFpdF90eXBlIjogIkhlaWdodCIsICJ2YWx1ZSI6ICIybTA1IiB9XSwiaW1hZ2UiOiAiaHR0cHM6Ly9pcGZzLmlvL2lwZnMvUW1TVmo4NUxUcGEzblFTbzJEN29xNVhYS1k5eFFhNGFTejVSaDJ1MkE1ZkxLZiJ9"
+            )
+        );
+    }
 }

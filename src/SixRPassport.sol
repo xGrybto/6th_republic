@@ -114,7 +114,8 @@ contract SixRPassport is ERC721, Ownable {
 
         // Génération du JSON
         string memory json = string(
-            abi.encode(
+            // aderyn-ignore-next-line(abi-encode-packed-hash-collision)
+            abi.encodePacked(
                 "{",
                 '"name": "SixRPassport NFT #',
                 tokenId.toString(),
@@ -148,7 +149,11 @@ contract SixRPassport is ERC721, Ownable {
         // Encodage base64
         string memory encodedJson = Base64.encode(bytes(json));
 
-        return string(abi.encode("data:application/json;base64,", encodedJson));
+        return
+            string(
+                // aderyn-ignore-next-line(abi-encode-packed-hash-collision)
+                abi.encodePacked("data:application/json;base64,", encodedJson)
+            );
     }
 
     function transferFrom(
