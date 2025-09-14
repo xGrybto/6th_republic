@@ -169,6 +169,36 @@ contract SixRPassportTest is Test {
         vm.stopPrank();
     }
 
+    function test_delegateDelegate() public {
+        setUpC1();
+        setUpC2();
+        setUpC3();
+
+        vm.prank(citizen_1);
+        sixRContract.delegateVoteTo(citizen_2);
+        vm.prank(citizen_2);
+        sixRContract.delegateVoteTo(citizen_3);
+        assertEq(sixRContract.s_votingPowers(citizen_1), 0);
+        assertEq(sixRContract.s_votingPowers(citizen_2), 1);
+        assertEq(sixRContract.s_votingPowers(citizen_3), 2); // Not 3 because we only delegate our vote, not delegators ones.
+    }
+
+    function test_delegationLoop() public {
+        setUpC1();
+        setUpC2();
+        setUpC3();
+
+        vm.prank(citizen_1);
+        sixRContract.delegateVoteTo(citizen_2);
+        vm.prank(citizen_2);
+        sixRContract.delegateVoteTo(citizen_3);
+        vm.prank(citizen_3);
+        sixRContract.delegateVoteTo(citizen_1);
+        assertEq(sixRContract.s_votingPowers(citizen_1), 1);
+        assertEq(sixRContract.s_votingPowers(citizen_2), 1);
+        assertEq(sixRContract.s_votingPowers(citizen_3), 1);
+    }
+
     function test_tokenURI() public {
         setUpC1();
         string memory tokenURI = sixRContract.tokenURI(1);
