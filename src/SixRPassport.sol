@@ -32,19 +32,21 @@ contract SixRPassport is ERC721, Ownable {
     mapping(uint256 => PassportAttributes) private s_tokenAttributes;
 
     //Delegation attributes
-    mapping(address => address) public s_delegators;
+    mapping(address => address) public s_representatives;
     mapping(address => uint256) public s_votingPowers;
 
-    modifier ownsPassport() {
+    modifier ownsValidPassport() {
         require(
-            balanceOf(msg.sender) == 1,
+            hasPassport(msg.sender),
             "The citizen doesn't own a SixRPassport SBT"
         );
         _;
     }
 
-    constructor() ERC721("6RVote", "6R") Ownable(msg.sender) {
-        s_tokenIds = 0;
+    constructor() ERC721("6RVote", "6R") Ownable(msg.sender) {}
+
+    function hasPassport(address user) public view returns (bool) {
+        return balanceOf(user) == 1;
     }
 
     // What if there is an error at the moment of a mint
@@ -77,9 +79,9 @@ contract SixRPassport is ERC721, Ownable {
         return s_tokenIds;
     }
 
-    function delegateVoteTo(address to) public ownsPassport {
+    function delegateVoteTo(address to) public ownsValidPassport {
         require(
-            s_delegators[msg.sender] == address(0),
+            s_representatives[msg.sender] == address(0),
             "Your vote has already been delegated"
         );
         require(
@@ -87,18 +89,18 @@ contract SixRPassport is ERC721, Ownable {
             "This address is not eligible to receive vote"
         );
 
-        s_delegators[msg.sender] = to;
+        s_representatives[msg.sender] = to;
         s_votingPowers[to]++;
         s_votingPowers[msg.sender]--;
 
         emit DelegationTo(msg.sender, to);
     }
 
-    function revokeVote() public ownsPassport {
-        address revokedAddress = s_delegators[msg.sender];
+    function revokeVote() public ownsValidPassport {
+        address revokedAddress = s_representatives[msg.sender];
         require(revokedAddress != address(0), "Your vote is not delegated");
 
-        s_delegators[msg.sender] = address(0);
+        s_representatives[msg.sender] = address(0);
         s_votingPowers[revokedAddress]--;
         s_votingPowers[msg.sender]++;
 
