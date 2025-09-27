@@ -20,7 +20,7 @@ contract SixRProposalTest is Test {
     function setUp() public {
         vm.startPrank(owner);
         sixRPassport = new SixRPassport();
-        sixRProposal = new SixRProposal(address(sixRPassport));
+        sixRProposal = new SixRProposal();
         vm.stopPrank();
         mintPassports();
     }
@@ -60,6 +60,7 @@ contract SixRProposalTest is Test {
     function createFirstProposal() public returns (uint256) {
         return
             sixRProposal.createProposal(
+                msg.sender,
                 "First proposal",
                 "This is the first proposal",
                 Types.Category.ECOLOGY
@@ -97,6 +98,7 @@ contract SixRProposalTest is Test {
         vm.prank(citizen_2);
         vm.expectRevert("Current proposal is not yet voted");
         sixRProposal.createProposal(
+            msg.sender,
             "Second proposal",
             "This is the second proposal",
             Types.Category.EDUCATION
@@ -109,10 +111,11 @@ contract SixRProposalTest is Test {
 
         // End the voting period by calling voteProposal function after 3 days
         vm.prank(citizen_1);
-        sixRProposal.voteProposal(Types.Vote.YES);
+        sixRProposal.voteProposal(msg.sender, Types.Vote.YES);
 
         vm.prank(citizen_2);
         sixRProposal.createProposal(
+            msg.sender,
             "Second proposal",
             "This is the second proposal",
             Types.Category.EDUCATION
@@ -124,13 +127,13 @@ contract SixRProposalTest is Test {
         uint256 id = createFirstProposal();
         vm.warp(block.timestamp + 3 days + 1 seconds);
         // This call will close the vote of the proposal
-        bool voted = sixRProposal.voteProposal(Types.Vote.YES);
+        bool voted = sixRProposal.voteProposal(msg.sender, Types.Vote.YES);
         assertEq(voted, false);
         (, , , , , Types.Status status, ) = sixRProposal.getProposal(id);
         assertEq(uint(status), uint(Types.Status.ENDED));
         // This call will be refused because the status of the proposal
         vm.expectRevert("Proposal voted, vote is not accepted anymore");
-        voted = sixRProposal.voteProposal(Types.Vote.YES);
+        voted = sixRProposal.voteProposal(msg.sender, Types.Vote.YES);
         vm.stopPrank();
     }
 
@@ -143,7 +146,7 @@ contract SixRProposalTest is Test {
         uint256 id = createFirstProposal();
 
         vm.prank(citizen_2);
-        bool voted = sixRProposal.voteProposal(Types.Vote.YES);
+        bool voted = sixRProposal.voteProposal(msg.sender, Types.Vote.YES);
 
         assertEq(voted, true);
         assertEq(sixRProposal.hasVoted(id, citizen_2), true);
@@ -155,9 +158,9 @@ contract SixRProposalTest is Test {
         uint256 id = createFirstProposal();
 
         vm.startPrank(citizen_2);
-        sixRProposal.voteProposal(Types.Vote.YES);
+        sixRProposal.voteProposal(msg.sender, Types.Vote.YES);
         vm.expectRevert("You have already voted");
-        sixRProposal.voteProposal(Types.Vote.NO);
+        sixRProposal.voteProposal(msg.sender, Types.Vote.NO);
         vm.stopPrank();
     }
 
@@ -183,7 +186,7 @@ contract SixRProposalTest is Test {
 
         vm.prank(citizen_4);
         vm.expectRevert("The citizen doesn't own a SixRPassport SBT");
-        sixRProposal.voteProposal(Types.Vote.YES);
+        sixRProposal.voteProposal(msg.sender, Types.Vote.YES);
     }
 
     // Vote then delegate => accepted but your vote will count zero (future draft for counting vote)
@@ -191,7 +194,7 @@ contract SixRProposalTest is Test {
         vm.startPrank(citizen_1);
         uint256 id = createFirstProposal();
 
-        sixRProposal.voteProposal(Types.Vote.NO);
+        sixRProposal.voteProposal(msg.sender, Types.Vote.NO);
         assertEq(sixRPassport.s_votingPowers(citizen_1), 1);
         sixRPassport.delegateVoteTo(citizen_2);
         vm.stopPrank();
@@ -215,6 +218,6 @@ contract SixRProposalTest is Test {
 
         vm.prank(citizen_3);
         vm.expectRevert("Restricted : You have delegated your vote");
-        sixRProposal.voteProposal(Types.Vote.NO);
+        sixRProposal.voteProposal(msg.sender, Types.Vote.NO);
     }
 }
