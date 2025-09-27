@@ -35,6 +35,8 @@ contract SixRPassport is ERC721, Ownable {
     mapping(address => address) public s_representatives;
     mapping(address => uint256) public s_votingPowers;
 
+    bool public paused;
+
     modifier ownsValidPassport() {
         require(
             hasPassport(msg.sender),
@@ -43,7 +45,21 @@ contract SixRPassport is ERC721, Ownable {
         _;
     }
 
-    constructor() ERC721("6RVote", "6R") Ownable(msg.sender) {}
+    modifier notPaused() {
+        require(
+            !paused,
+            "The passport contract is paused for now, no changing state allowed."
+        );
+        _;
+    }
+
+    constructor() ERC721("6RVote", "6R") Ownable(msg.sender) {
+        paused = false;
+    }
+
+    function pauseContract(bool b) public {
+        paused = b;
+    }
 
     function hasPassport(address user) public view returns (bool) {
         return balanceOf(user) == 1;
@@ -58,7 +74,7 @@ contract SixRPassport is ERC721, Ownable {
         string memory birthDate,
         string memory birthPlace,
         string memory height
-    ) public onlyOwner returns (uint256) {
+    ) public notPaused onlyOwner returns (uint256) {
         require(balanceOf(to) == 0, "This citizen has already a 6R passport");
 
         s_tokenIds++;
@@ -79,7 +95,7 @@ contract SixRPassport is ERC721, Ownable {
         return s_tokenIds;
     }
 
-    function delegateVoteTo(address to) public ownsValidPassport {
+    function delegateVoteTo(address to) public notPaused ownsValidPassport {
         require(
             s_representatives[msg.sender] == address(0),
             "Your vote has already been delegated"
@@ -96,7 +112,7 @@ contract SixRPassport is ERC721, Ownable {
         emit DelegationTo(msg.sender, to);
     }
 
-    function revokeVote() public ownsValidPassport {
+    function revokeVote() public notPaused ownsValidPassport {
         address revokedAddress = s_representatives[msg.sender];
         require(revokedAddress != address(0), "Your vote is not delegated");
 

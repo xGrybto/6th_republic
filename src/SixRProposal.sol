@@ -39,19 +39,9 @@ contract SixRProposal {
 
     uint256 public proposalCounter;
     mapping(uint256 => Proposal) proposals;
-    SixRPassport sixRPassport;
 
-    constructor(address sixRPassportContract) {
-        sixRPassport = SixRPassport(sixRPassportContract);
+    constructor() {
         proposalCounter = 1;
-    }
-
-    modifier ownsValidPassport() {
-        require(
-            sixRPassport.hasPassport(msg.sender),
-            "The citizen doesn't own a SixRPassport SBT"
-        );
-        _;
     }
 
     modifier isProposalEnded() {
@@ -71,21 +61,22 @@ contract SixRProposal {
     }
 
     function createProposal(
+        address sender,
         string memory _title,
         string memory _description,
         Types.Category _category
-    ) public isProposalEnded ownsValidPassport returns (uint256) {
+    ) public isProposalEnded returns (uint256) {
         uint256 proposalId = proposalCounter;
 
         Proposal storage proposal = proposals[proposalId];
         proposal.title = _title;
         proposal.description = _description;
         proposal.category = _category;
-        proposal.creator = msg.sender;
+        proposal.creator = sender;
         proposal.creationTime = block.timestamp;
         proposal.status = Types.Status.ONGOING;
 
-        emit ProposalCreated(proposalId, msg.sender, _title);
+        emit ProposalCreated(proposalId, sender, _title);
 
         proposalCounter++;
 
@@ -93,27 +84,24 @@ contract SixRProposal {
     }
 
     function voteProposal(
+        address sender,
         Types.Vote vote
-    ) public isProposalOngoing ownsValidPassport returns (bool) {
+    ) public isProposalOngoing returns (bool) {
         //TODO Checks :
         // - que le citoyen est un passeport valide (ownsValidPassport)
         // - que le vote ne soit pas délégué (précaution)
         // - la personne n'a pas déjà voté
         // - le vote soit ouvert
-        require(
-            sixRPassport.s_representatives(msg.sender) == address(0), // != voting power, toujours 1 ou 0 => OK
-            "Restricted : You have delegated your vote"
-        );
         uint256 proposalId = proposalCounter - 1;
 
         Proposal storage proposal = proposals[proposalId];
-        require(!proposal.votes.contains(msg.sender), "You have already voted");
+        require(!proposal.votes.contains(sender), "You have already voted");
         if (proposal.creationTime + VOTING_PERIOD < block.timestamp) {
             endProposal(proposal);
             return false;
         } else {
-            proposal.votes.set(msg.sender, uint256(vote));
-            emit ProposalVoted(proposalId, msg.sender);
+            proposal.votes.set(sender, uint256(vote));
+            emit ProposalVoted(proposalId, sender);
             return true;
         }
     }
