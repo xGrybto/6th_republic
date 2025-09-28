@@ -5,12 +5,12 @@ import {SixRProposal} from "./SixRProposal.sol";
 import {Types} from "./Types.sol";
 
 contract Orchestrator {
-    SixRPassport passport;
-    SixRProposal proposal;
+    SixRPassport public passport;
+    SixRProposal public proposal;
 
-    constructor(address _passport, address _proposal) {
-        passport = SixRPassport(_passport);
-        proposal = SixRProposal(_proposal);
+    constructor() {
+        passport = new SixRPassport();
+        proposal = new SixRProposal();
     }
 
     modifier ownsValidPassport() {

@@ -4,11 +4,12 @@ pragma solidity ^0.8.20;
 import "@openzeppelin/utils/Strings.sol";
 import "@openzeppelin/utils/Base64.sol";
 import "@openzeppelin/utils/structs/EnumerableMap.sol";
+import "@openzeppelin/access/Ownable.sol";
 
 import {SixRPassport} from "./SixRPassport.sol";
 import {Types} from "./Types.sol";
 
-contract SixRProposal {
+contract SixRProposal is Ownable {
     using EnumerableMap for EnumerableMap.AddressToUintMap;
     using Types for Types.Category;
     using Types for Types.Vote;
@@ -40,7 +41,7 @@ contract SixRProposal {
     uint256 public proposalCounter;
     mapping(uint256 => Proposal) proposals;
 
-    constructor() {
+    constructor() Ownable(msg.sender) {
         proposalCounter = 1;
     }
 
@@ -65,7 +66,7 @@ contract SixRProposal {
         string memory _title,
         string memory _description,
         Types.Category _category
-    ) public isProposalEnded returns (uint256) {
+    ) public onlyOwner isProposalEnded returns (uint256) {
         uint256 proposalId = proposalCounter;
 
         Proposal storage proposal = proposals[proposalId];
@@ -86,7 +87,7 @@ contract SixRProposal {
     function voteProposal(
         address sender,
         Types.Vote vote
-    ) public isProposalOngoing returns (bool) {
+    ) public onlyOwner isProposalOngoing returns (bool) {
         //TODO Checks :
         // - que le citoyen est un passeport valide (ownsValidPassport)
         // - que le vote ne soit pas délégué (précaution)
