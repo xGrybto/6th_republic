@@ -57,7 +57,7 @@ contract SixRPassport is ERC721, Ownable {
         paused = false;
     }
 
-    function pauseContract(bool b) public {
+    function pauseContract(bool b) public onlyOwner {
         paused = b;
     }
 
