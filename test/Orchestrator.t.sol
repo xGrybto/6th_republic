@@ -202,8 +202,15 @@ contract OrchestratorTest is Test {
     }
 
     /***************************************/
-    // PASSPORT ACTION WHEN VOTE ONGOING  //
+    //      TEST PAUSE FUNCTIONNALITY     //
     /*************************************/
+
+    function test_pausePassportNotOwner() public {
+        vm.prank(citizen_1);
+        vm.expectRevert();
+        passport.pauseContract(true);
+    }
+
     function test_cantDelegateWhenVoteOngoing() public {
         test_createProposal();
 
