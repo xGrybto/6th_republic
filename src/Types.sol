@@ -19,6 +19,7 @@ library Types {
     enum Status {
         // CREATED, //TODO : For Draft #3
         ENDED,
-        ONGOING
+        ONGOING,
+        COUNTING
     }
 }

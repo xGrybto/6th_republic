@@ -7,8 +7,6 @@ import {Orchestrator} from "../src/Orchestrator.sol";
 import {Types} from "../src/Types.sol";
 import {Test, console} from "forge-std/Test.sol";
 
-//TODO : Merge Proposal tests into this test file
-
 contract OrchestratorTest is Test {
     using Types for Types.Category;
     SixRPassport private passport;
@@ -86,7 +84,7 @@ contract OrchestratorTest is Test {
             ,
             Types.Status status,
 
-        ) = proposal.getProposal(id);
+        ) = proposal.get(id);
         assertEq(id, 1);
         assertEq(title, "First proposal");
         assertEq(description, "This is the first proposal");
@@ -141,7 +139,7 @@ contract OrchestratorTest is Test {
         // This call will close the vote of the proposal
         bool voted = orchestrator.voteProposal(Types.Vote.YES);
         assertEq(voted, false);
-        (, , , , , Types.Status status, ) = proposal.getProposal(id);
+        (, , , , , Types.Status status, ) = proposal.get(id);
         assertEq(uint(status), uint(Types.Status.ENDED));
         // This call will be refused because the status of the proposal
         vm.expectRevert("Proposal voted, vote is not accepted anymore");
