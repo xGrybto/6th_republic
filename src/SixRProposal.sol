@@ -17,15 +17,15 @@ contract SixRProposal is Ownable {
 
     uint256 constant VOTING_PERIOD = 3 days;
 
-    event ProposalCreated(
+    event Created(
         uint256 indexed proposalId,
         address indexed creator,
         string title
     );
 
-    event ProposalVoted(uint256 indexed proposalId, address indexed voter);
+    event Voted(uint256 indexed proposalId, address indexed voter);
 
-    event ProposalEnded(uint256 indexed proposalId, bytes32 indexed _blockhash);
+    event Ended(uint256 indexed proposalId, bytes32 indexed _blockhash);
 
     struct Proposal {
         string title;
@@ -41,11 +41,7 @@ contract SixRProposal is Ownable {
     uint256 public proposalCounter;
     mapping(uint256 => Proposal) proposals;
 
-    constructor() Ownable(msg.sender) {
-        proposalCounter = 1;
-    }
-
-    modifier isProposalEnded() {
+    modifier isEnded() {
         require(
             proposals[proposalCounter - 1].status == Types.Status.ENDED,
             "Current proposal is not yet voted"
@@ -53,7 +49,7 @@ contract SixRProposal is Ownable {
         _;
     }
 
-    modifier isProposalOngoing() {
+    modifier isOngoing() {
         require(
             proposals[proposalCounter - 1].status == Types.Status.ONGOING,
             "Proposal voted, vote is not accepted anymore"
@@ -61,12 +57,16 @@ contract SixRProposal is Ownable {
         _;
     }
 
-    function createProposal(
+    constructor() Ownable(msg.sender) {
+        proposalCounter = 1;
+    }
+
+    function create(
         address sender,
         string memory _title,
         string memory _description,
         Types.Category _category
-    ) public onlyOwner isProposalEnded returns (uint256) {
+    ) public onlyOwner isEnded returns (uint256) {
         uint256 proposalId = proposalCounter;
 
         Proposal storage proposal = proposals[proposalId];
@@ -77,17 +77,17 @@ contract SixRProposal is Ownable {
         proposal.creationTime = block.timestamp;
         proposal.status = Types.Status.ONGOING;
 
-        emit ProposalCreated(proposalId, sender, _title);
+        emit Created(proposalId, sender, _title);
 
         proposalCounter++;
 
         return proposalId;
     }
 
-    function voteProposal(
+    function vote(
         address sender,
-        Types.Vote vote
-    ) public onlyOwner isProposalOngoing returns (bool) {
+        Types.Vote _vote
+    ) public onlyOwner isOngoing returns (bool) {
         //TODO Checks :
         // - que le citoyen est un passeport valide (ownsValidPassport)
         // - que le vote ne soit pas délégué (précaution)
@@ -98,22 +98,24 @@ contract SixRProposal is Ownable {
         Proposal storage proposal = proposals[proposalId];
         require(!proposal.votes.contains(sender), "You have already voted");
         if (proposal.creationTime + VOTING_PERIOD < block.timestamp) {
-            endProposal(proposal);
+            end(proposal);
             return false;
         } else {
-            proposal.votes.set(sender, uint256(vote));
-            emit ProposalVoted(proposalId, sender);
+            proposal.votes.set(sender, uint256(_vote));
+            emit Voted(proposalId, sender);
             return true;
         }
     }
 
-    function endProposal(Proposal storage p) private {
+    function end(Proposal storage p) private {
         p.status = Types.Status.ENDED;
         p.endBlockHash = blockhash(block.number);
-        emit ProposalEnded(proposalCounter - 1, p.endBlockHash);
+        emit Ended(proposalCounter - 1, p.endBlockHash);
     }
 
-    function getProposal(
+    //TODO : Implement countVotes()
+
+    function get(
         uint256 proposalId
     )
         public

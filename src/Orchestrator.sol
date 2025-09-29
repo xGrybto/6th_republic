@@ -34,7 +34,7 @@ contract Orchestrator {
         string memory _description,
         Types.Category _category
     ) public ownsValidPassport returns (uint256) {
-        uint256 id = proposal.createProposal(
+        uint256 id = proposal.create(
             msg.sender,
             _title,
             _description,
@@ -47,13 +47,16 @@ contract Orchestrator {
     function voteProposal(
         Types.Vote vote
     ) public ownsValidPassport voteNotDelegated returns (bool) {
-        bool isVoted = proposal.voteProposal(msg.sender, vote);
+        bool isVoted = proposal.vote(msg.sender, vote);
 
         if (!isVoted) {
             // The voting period of the proposal is over
+            //TODO : Put proposal contract on standby
             passport.pauseContract(false);
         }
 
         return isVoted;
     }
+
+    //TODO : Implement countVotes(), must unpause proposal contract
 }
