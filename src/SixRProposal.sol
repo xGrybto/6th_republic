@@ -25,7 +25,9 @@ contract SixRProposal is Ownable {
 
     event Voted(uint256 indexed proposalId, address indexed voter);
 
-    event Ended(uint256 indexed proposalId, bytes32 indexed _blockhash);
+    event Closed(uint256 indexed proposalId, bytes32 indexed _blockhash);
+
+    event Ended(uint256 indexed proposalId, bytes32 indexed _blockhash); //TODO : add result data
 
     struct Proposal {
         string title;
@@ -53,6 +55,14 @@ contract SixRProposal is Ownable {
         require(
             proposals[proposalCounter - 1].status == Types.Status.ONGOING,
             "Proposal voted, vote is not accepted anymore"
+        );
+        _;
+    }
+
+    modifier isCounting() {
+        require(
+            proposals[proposalCounter - 1].status == Types.Status.COUNTING,
+            "The counting of votes is over"
         );
         _;
     }
@@ -98,7 +108,7 @@ contract SixRProposal is Ownable {
         Proposal storage proposal = proposals[proposalId];
         require(!proposal.votes.contains(sender), "You have already voted");
         if (proposal.creationTime + VOTING_PERIOD < block.timestamp) {
-            end(proposal);
+            closeElection(proposal);
             return false;
         } else {
             proposal.votes.set(sender, uint256(_vote));
@@ -107,13 +117,34 @@ contract SixRProposal is Ownable {
         }
     }
 
-    function end(Proposal storage p) private {
-        p.status = Types.Status.ENDED;
+    function closeElection(Proposal storage p) private {
+        p.status = Types.Status.COUNTING;
         p.endBlockHash = blockhash(block.number);
-        emit Ended(proposalCounter - 1, p.endBlockHash);
+        emit Closed(proposalCounter - 1, p.endBlockHash);
     }
 
-    //TODO : Implement countVotes()
+    function getVoters() public view returns (address[] memory) {
+        uint256 proposalId = proposalCounter - 1;
+        Proposal storage proposal = proposals[proposalId];
+
+        return proposal.votes.keys();
+    }
+
+    function getVoterResult(
+        address voter
+    ) public view isCounting returns (uint256) {
+        uint256 proposalId = proposalCounter - 1;
+        Proposal storage proposal = proposals[proposalId];
+
+        return proposal.votes.get(voter);
+    }
+
+    function endProposal() public onlyOwner {
+        uint256 proposalId = proposalCounter - 1;
+        Proposal storage proposal = proposals[proposalId];
+
+        proposal.status = Types.Status.ENDED;
+    }
 
     function get(
         uint256 proposalId
