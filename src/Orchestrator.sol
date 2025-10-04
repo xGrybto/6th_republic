@@ -5,6 +5,10 @@ import {SixRProposal} from "./SixRProposal.sol";
 import {Types} from "./Types.sol";
 
 contract Orchestrator {
+    event ElectionVoted(uint256 yes, uint256 no, uint256 abstention);
+
+    event ElectionRefused(uint256 yes, uint256 no, uint256 abstention);
+
     SixRPassport public passport;
     SixRProposal public proposal;
 
@@ -58,5 +62,34 @@ contract Orchestrator {
         return isVoted;
     }
 
-    //TODO : Implement countVotes(), must unpause proposal contract
+    function countVotes() public {
+        address[] memory voters = proposal.getVoters();
+
+        uint256[3] memory result;
+
+        for (uint index = 0; index < voters.length; index++) {
+            address voter = voters[index];
+            result[proposal.getVoterResult(voter)] += passport.s_votingPowers(
+                voter
+            );
+        }
+
+        if (result[uint(Types.Vote.YES)] > result[uint(Types.Vote.NO)]) {
+            emit ElectionVoted(
+                //proposal ID
+                result[uint(Types.Vote.YES)],
+                result[uint(Types.Vote.NO)],
+                result[uint(Types.Vote.NULL)]
+            );
+        } else {
+            emit ElectionRefused(
+                //proposal ID
+                result[uint(Types.Vote.YES)],
+                result[uint(Types.Vote.NO)],
+                result[uint(Types.Vote.NULL)]
+            );
+        }
+
+        proposal.endProposal();
+    }
 }

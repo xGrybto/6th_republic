@@ -102,6 +102,44 @@ contract OrchestratorTest is Test {
         assertEq(voted, true);
     }
 
+    function test_getVoters() public {
+        test_createProposal();
+
+        vm.prank(citizen_1);
+        bool voted_1 = orchestrator.voteProposal(Types.Vote.YES);
+        vm.prank(citizen_2);
+        bool voted_2 = orchestrator.voteProposal(Types.Vote.NO);
+        vm.prank(citizen_3);
+        bool voted_3 = orchestrator.voteProposal(Types.Vote.YES);
+
+        assertEq(voted_1, true);
+        assertEq(voted_2, true);
+        assertEq(voted_3, true);
+
+        address[] memory voters = proposal.getVoters();
+
+        assertEq(voters.length, 3);
+        assertEq(voters[0], citizen_1);
+        assertEq(voters[1], citizen_2);
+        assertEq(voters[2], citizen_3);
+    }
+
+    function test_getVoterResult() public {
+        test_createProposal();
+
+        vm.prank(citizen_1);
+        orchestrator.voteProposal(Types.Vote.YES);
+
+        vm.warp(block.timestamp + 3 days + 1 seconds);
+
+        vm.prank(citizen_2);
+        orchestrator.voteProposal(Types.Vote.YES);
+
+        address[] memory voters = proposal.getVoters();
+
+        assertEq(proposal.getVoterResult(voters[0]), 2);
+    }
+
     /***************************************/
     //            PROPOSAL STATUS         //
     /*************************************/
@@ -120,9 +158,12 @@ contract OrchestratorTest is Test {
         test_createProposal();
         vm.warp(block.timestamp + 3 days + 1 seconds);
 
-        // End the voting period by calling voteProposal function after 3 days
+        // Close the voting period by calling voteProposal function after 3 days
         vm.prank(citizen_1);
         orchestrator.voteProposal(Types.Vote.YES);
+
+        // End the proposal by counting votes
+        orchestrator.countVotes();
 
         vm.prank(citizen_2);
         orchestrator.createProposal(
@@ -132,7 +173,7 @@ contract OrchestratorTest is Test {
         );
     }
 
-    function test_endProposal() public {
+    function test_closeProposal() public {
         vm.startPrank(citizen_1);
         uint256 id = createFirstProposal();
         vm.warp(block.timestamp + 3 days + 1 seconds);
@@ -140,11 +181,33 @@ contract OrchestratorTest is Test {
         bool voted = orchestrator.voteProposal(Types.Vote.YES);
         assertEq(voted, false);
         (, , , , , Types.Status status, ) = proposal.get(id);
-        assertEq(uint(status), uint(Types.Status.ENDED));
+        assertEq(uint(status), uint(Types.Status.COUNTING));
         // This call will be refused because the status of the proposal
         vm.expectRevert("Proposal voted, vote is not accepted anymore");
         voted = orchestrator.voteProposal(Types.Vote.YES);
         vm.stopPrank();
+    }
+
+    function test_countResult() public {
+        vm.prank(citizen_1);
+        uint256 id = createFirstProposal();
+
+        vm.prank(citizen_1);
+        orchestrator.voteProposal(Types.Vote.YES);
+
+        vm.prank(citizen_2);
+        orchestrator.voteProposal(Types.Vote.YES);
+
+        vm.warp(block.timestamp + 3 days + 1 seconds);
+
+        vm.prank(citizen_3);
+        orchestrator.voteProposal(Types.Vote.YES);
+
+        orchestrator.countVotes();
+
+        (, , , , , Types.Status status, ) = proposal.get(id);
+
+        assertEq(uint(status), uint(Types.Status.ENDED));
     }
 
     /***************************************/
