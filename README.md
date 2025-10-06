@@ -41,12 +41,14 @@ Topics to discuss about :
 - Is it fair and not risky to give to each citizen a voting power of one ? If not, how can we fairly adjust voting power to the right persons (which is hard to define)/the experts in the dedicated domain of the proposal, ...
 - How can we deal with the privacy (of voting, delegating, ...) => ZKPs ?
 
-## Current system - Draft n°2
+## Current system - Draft n°3
 
 ### Key concepts
 - "Soulbound Token" (SBT) for uniq passport
 - EnumerableMap from OpenZeppelin for handling votes (https://docs.openzeppelin.com/contracts/5.x/api/utils#EnumerableMap)
 - Enumeration for vote choice (NULL, YES, NO) : first value is NULL. The enum structure is simply an array of uint. This way, the default value in the mapping "votes" is NULL if a citizen didn't vote.
+- Add an orchestrator to manage the state between passport and proposal contracts
+- Introduce pausable functionnality in passport and proposal contracts
 
 ### Passport functionnalities
 - Mint of a passport
@@ -59,3 +61,5 @@ Topics to discuss about :
     - Only one proposal at a time: a new proposal can't be created as long as the one before is not ended.
 - Vote for a proposal : YES, NO, NULL (not recommended)
 - End a proposal with timeout duration : need to call "vote" function when the time of vote is over.
+- Counting vote onchain, add the state "Counting" before ending a proposal
+- Block every delegation and passport creation during an ongoing proposal
