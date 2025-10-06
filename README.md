@@ -41,44 +41,21 @@ Topics to discuss about :
 - Is it fair and not risky to give to each citizen a voting power of one ? If not, how can we fairly adjust voting power to the right persons (which is hard to define)/the experts in the dedicated domain of the proposal, ...
 - How can we deal with the privacy (of voting, delegating, ...) => ZKPs ?
 
+## Current system - Draft n°2
 
-## First draft 
-### 6RPassport
-The following principles must be implemented :
-- Eligibility of voting for citizen who has a 6RPassport SBT delivered by designated entity (eg: administration)
-- Voting power of one for each registered citizen
-- Delegate vote to one person
-- Revoke vote to one person
-- 6RPassport SBT properties :
-    - Non transferable (by definition "Soul Bound Token")
-    - Mintable by designated entity (aka. Owner)
+### Key concepts
+- "Soulbound Token" (SBT) for uniq passport
+- EnumerableMap from OpenZeppelin for handling votes (https://docs.openzeppelin.com/contracts/5.x/api/utils#EnumerableMap)
+- Enumeration for vote choice (NULL, YES, NO) : first value is NULL. The enum structure is simply an array of uint. This way, the default value in the mapping "votes" is NULL if a citizen didn't vote.
 
-## Second draft
-### 6RPassport
-- 6RPassport SBT properties :
-    - Non transferable (by definition "Soul Bound Token")
-    - Mintable by designated entity (aka. Owner)
-    - ***Burnable when ID card expires***
-- Eligibility of voting for citizen who has a 6RPassport SBT delivered by designated entity (eg: administration)
-- Voting power of one for each registered citizen
-- Delegate vote to one person
-- Revoke vote to one person
-- ***Handle expired/non existent 6RPassport (delegation, ...)***
+### Passport functionnalities
+- Mint of a passport
+- Delegation logic (delegate, revoke delegation)
 
-## Third draft
-### 6RPassport
-- 6RPassport SBT properties :
-    - Non transferable (by definition "Soul Bound Token")
-    - Mintable by designated entity (aka. Owner)
-    - Burnable when ID card expires
-- Eligibility of voting for citizen who has a 6RPassport SBT delivered by designated entity (eg: administration)
-- Voting power of one for each registered citizen
-- Handle expired/non existent 6RPassport (delegation, ...)
-### 6RProposal
-- ***Create a proposal if citizen owns a 6RPassport***
-- ***Signature of a proposal***
-- ***Proposal turn into a bill after thresold of signatures reached.***
-
-## After 
-- Vote for the bill
-- ...
+### Proposal functionnalities
+- Create a proposal
+    - Any citizen with a passport can open a proposal
+    - Directly ongoing vote when proposal is created
+    - Only one proposal at a time: a new proposal can't be created as long as the one before is not ended.
+- Vote for a proposal : YES, NO, NULL (not recommended)
+- End a proposal with timeout duration : need to call "vote" function when the time of vote is over.
