@@ -106,11 +106,11 @@ contract SixRProposal is Ownable {
         uint256 proposalId = proposalCounter - 1;
 
         Proposal storage proposal = proposals[proposalId];
-        require(!proposal.votes.contains(sender), "You have already voted");
         if (proposal.creationTime + VOTING_PERIOD < block.timestamp) {
             closeElection(proposal);
             return false;
         } else {
+            require(!proposal.votes.contains(sender), "You have already voted");
             proposal.votes.set(sender, uint256(_vote));
             emit Voted(proposalId, sender);
             return true;

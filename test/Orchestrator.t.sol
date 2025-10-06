@@ -210,6 +210,26 @@ contract OrchestratorTest is Test {
         assertEq(uint(status), uint(Types.Status.ENDED));
     }
 
+    function test_closeProposalWithCitizenThatHasVoted() public {
+        vm.startPrank(citizen_1);
+        uint256 id = createFirstProposal();
+
+        bool voted = orchestrator.voteProposal(Types.Vote.YES);
+
+        assertEq(voted, true);
+
+        vm.warp(block.timestamp + 3 days + 1 seconds);
+        // This call will close the vote of the proposal
+        bool voted_2 = orchestrator.voteProposal(Types.Vote.YES);
+        assertEq(voted_2, false);
+        (, , , , , Types.Status status, ) = proposal.get(id);
+        assertEq(uint(status), uint(Types.Status.COUNTING));
+        // This call will be refused because the status of the proposal
+        vm.expectRevert("Proposal voted, vote is not accepted anymore");
+        voted = orchestrator.voteProposal(Types.Vote.YES);
+        vm.stopPrank();
+    }
+
     /***************************************/
     //            VOTING                  //
     /*************************************/
@@ -235,6 +255,18 @@ contract OrchestratorTest is Test {
         vm.expectRevert("You have already voted");
         orchestrator.voteProposal(Types.Vote.NO);
         vm.stopPrank();
+    }
+
+    //Process functionnal even if nobody vote the proposal
+    function test_countVotesWithoutAnyVote() public {
+        test_createProposal();
+
+        vm.warp(block.timestamp + 3 days + 1 seconds);
+
+        vm.prank(citizen_1);
+        orchestrator.voteProposal(Types.Vote.YES);
+
+        orchestrator.countVotes();
     }
 
     /***************************************/
