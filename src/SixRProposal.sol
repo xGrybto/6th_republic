@@ -27,7 +27,7 @@ contract SixRProposal is Ownable {
 
     event Closed(uint256 indexed proposalId, bytes32 indexed _blockhash);
 
-    event Ended(uint256 indexed proposalId, bytes32 indexed _blockhash); //TODO : add result data
+    event Ended(uint256 indexed proposalId, bytes32 indexed _blockhash);
 
     struct Proposal {
         string title;
@@ -144,6 +144,8 @@ contract SixRProposal is Ownable {
         Proposal storage proposal = proposals[proposalId];
 
         proposal.status = Types.Status.ENDED;
+
+        emit Ended(proposalId, proposal.endBlockHash);
     }
 
     function get(
