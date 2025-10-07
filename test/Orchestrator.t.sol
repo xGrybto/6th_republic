@@ -154,6 +154,40 @@ contract OrchestratorTest is Test {
         );
     }
 
+    function test_createAProposalWhenCountingState() public {
+        test_createProposal();
+
+        vm.warp(block.timestamp + 3 days + 1 seconds);
+
+        // Change state to "Counting"
+        vm.prank(citizen_1);
+        orchestrator.voteProposal(Types.Vote.YES);
+
+        vm.prank(citizen_2);
+        vm.expectRevert("Current proposal is not yet voted");
+        orchestrator.createProposal(
+            "Second proposal",
+            "This is the second proposal",
+            Types.Category.EDUCATION
+        );
+    }
+
+    function test_passportActionsWhenCountingState() public {
+        test_createProposal();
+
+        vm.warp(block.timestamp + 3 days + 1 seconds);
+
+        // Change state to "Counting"
+        vm.prank(citizen_1);
+        orchestrator.voteProposal(Types.Vote.YES);
+
+        vm.prank(citizen_1);
+        vm.expectRevert(
+            "The passport contract is paused for now, no changing state allowed."
+        );
+        passport.delegateVoteTo(citizen_2);
+    }
+
     function test_createProposalAfterPreviousProposal() public {
         test_createProposal();
         vm.warp(block.timestamp + 3 days + 1 seconds);

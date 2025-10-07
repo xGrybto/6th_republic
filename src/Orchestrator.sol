@@ -51,15 +51,7 @@ contract Orchestrator {
     function voteProposal(
         Types.Vote vote
     ) public ownsValidPassport voteNotDelegated returns (bool) {
-        bool isVoted = proposal.vote(msg.sender, vote);
-
-        if (!isVoted) {
-            // The voting period of the proposal is over
-            //TODO : Put proposal contract on standby
-            passport.pauseContract(false);
-        }
-
-        return isVoted;
+        return proposal.vote(msg.sender, vote);
     }
 
     function countVotes() public {
@@ -91,5 +83,7 @@ contract Orchestrator {
         }
 
         proposal.endProposal();
+
+        passport.pauseContract(false);
     }
 }
