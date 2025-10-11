@@ -9,6 +9,10 @@ import "@openzeppelin/utils/Base64.sol";
 contract SixRPassport is ERC721, Ownable {
     using Strings for uint256;
 
+    event DelegatedModeEnabled(address indexed citizen);
+
+    event DelegatedModeDisabled(address indexed citizen);
+
     event DelegationTo(
         address indexed citizen,
         address indexed delegatedCitizen
@@ -33,7 +37,8 @@ contract SixRPassport is ERC721, Ownable {
 
     //Delegation attributes
     mapping(address => address) public s_representatives;
-    mapping(address => uint256) public s_votingPowers;
+    mapping(address => uint256) public s_delegatePowers;
+    mapping(address => bool) public s_delegatedMode;
 
     bool public paused;
 
@@ -49,6 +54,38 @@ contract SixRPassport is ERC721, Ownable {
         require(
             !paused,
             "The passport contract is paused for now, no changing state allowed."
+        );
+        _;
+    }
+
+    modifier isDelegate(address delegate) {
+        require(
+            s_delegatedMode[delegate] == true,
+            "This citizen is not a delegate"
+        );
+        _;
+    }
+
+    modifier isNotDelegate(address delegate) {
+        require(
+            s_delegatedMode[delegate] == false,
+            "This citizen is a delegate"
+        );
+        _;
+    }
+
+    modifier delegated() {
+        require(
+            s_representatives[msg.sender] != address(0),
+            "Your vote is not delegated"
+        );
+        _;
+    }
+
+    modifier notDelegated() {
+        require(
+            s_representatives[msg.sender] == address(0),
+            "Your vote has already been delegated"
         );
         _;
     }
@@ -78,7 +115,6 @@ contract SixRPassport is ERC721, Ownable {
         require(balanceOf(to) == 0, "This citizen has already a 6R passport");
 
         s_tokenIds++;
-        s_votingPowers[to] = 1;
 
         //TODO : verification of correct data eg: nationality with Enum, date format)
         s_tokenAttributes[s_tokenIds] = PassportAttributes(
@@ -95,30 +131,48 @@ contract SixRPassport is ERC721, Ownable {
         return s_tokenIds;
     }
 
-    function delegateVoteTo(address to) public notPaused ownsValidPassport {
-        require(
-            s_representatives[msg.sender] == address(0),
-            "Your vote has already been delegated"
-        );
-        require(
-            balanceOf(to) == 1,
-            "This address is not eligible to receive vote"
-        );
+    function enableDelegatedMode()
+        public
+        notPaused
+        ownsValidPassport
+        notDelegated
+    {
+        s_delegatedMode[msg.sender] = true;
+        emit DelegatedModeEnabled(msg.sender);
+    }
 
+    function disableDelegatedMode()
+        public
+        notPaused
+        ownsValidPassport
+        delegated
+    {
+        s_delegatedMode[msg.sender] = false;
+        emit DelegatedModeDisabled(msg.sender);
+    }
+
+    function delegateVoteTo(
+        address to
+    )
+        public
+        notPaused
+        ownsValidPassport
+        isNotDelegate(msg.sender)
+        notDelegated
+        isDelegate(to)
+    {
         s_representatives[msg.sender] = to;
-        s_votingPowers[to]++;
-        s_votingPowers[msg.sender]--;
+        s_delegatePowers[to]++;
 
         emit DelegationTo(msg.sender, to);
     }
 
-    function revokeVote() public notPaused ownsValidPassport {
+    // New name : revokeDelegation ?
+    function revokeVote() public notPaused ownsValidPassport delegated {
         address revokedAddress = s_representatives[msg.sender];
-        require(revokedAddress != address(0), "Your vote is not delegated");
 
         s_representatives[msg.sender] = address(0);
-        s_votingPowers[revokedAddress]--;
-        s_votingPowers[msg.sender]++;
+        s_delegatePowers[revokedAddress]--;
 
         emit RevokeDelegationTo(msg.sender, revokedAddress);
     }

@@ -140,6 +140,8 @@ contract OrchestratorTest is Test {
         assertEq(proposal.getVoterResult(voters[0]), 2);
     }
 
+    //TODO : Test on counting vote with delegation, with multiple voters
+
     /***************************************/
     //            PROPOSAL STATUS         //
     /*************************************/

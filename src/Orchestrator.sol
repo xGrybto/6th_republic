@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.20;
 
 import {SixRPassport} from "./SixRPassport.sol";
@@ -61,9 +62,13 @@ contract Orchestrator {
 
         for (uint index = 0; index < voters.length; index++) {
             address voter = voters[index];
-            result[proposal.getVoterResult(voter)] += passport.s_votingPowers(
-                voter
-            );
+            if (passport.s_delegatedMode(voter)) {
+                result[proposal.getVoterResult(voter)] +=
+                    passport.s_delegatePowers(voter) +
+                    1; // Vote attribution : delegatePower + citizenVote (1)
+            } else {
+                result[proposal.getVoterResult(voter)]++; // Vote attribution : citizenVote (1)
+            }
         }
 
         if (result[uint(Types.Vote.YES)] > result[uint(Types.Vote.NO)]) {
