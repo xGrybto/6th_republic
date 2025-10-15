@@ -220,8 +220,6 @@ contract OrchestratorTest is Test {
         assertEq(proposal.getVoterResult(voters[2]), 1);
 
         orchestrator.countVotes();
-
-        //TODO: not finished
     }
 
     /***************************************/
