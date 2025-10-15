@@ -34,6 +34,12 @@ contract Orchestrator {
         _;
     }
 
+    //// Passport functionnalities /////
+
+    //TODO : Add functions
+
+    //// Proposal functionnalities ////
+
     function createProposal(
         string memory _title,
         string memory _description,

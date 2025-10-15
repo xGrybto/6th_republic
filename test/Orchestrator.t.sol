@@ -24,11 +24,11 @@ contract OrchestratorTest is Test {
         orchestrator = new Orchestrator();
         passport = SixRPassport(orchestrator.passport());
         proposal = SixRProposal(orchestrator.proposal());
-        mintPassports();
+        mintThreePassports();
     }
 
-    function mintPassports() public {
-        vm.startPrank(address(orchestrator));
+    function mintThreePassports() public {
+        vm.startPrank(address(orchestrator)); //TODO : to remove later
         passport.safeMint(
             citizen_1,
             "Marc",
@@ -102,6 +102,25 @@ contract OrchestratorTest is Test {
         assertEq(voted, true);
     }
 
+    function test_createProposalThroughProposalContract() public {
+        vm.prank(citizen_1);
+        vm.expectRevert();
+        proposal.create(
+            citizen_1,
+            "First proposal",
+            "This is the first proposal",
+            Types.Category.ECOLOGY
+        );
+    }
+
+    function test_voteProposalThroughProposalContract() public {
+        test_createProposal();
+
+        vm.prank(citizen_1);
+        vm.expectRevert();
+        proposal.vote(msg.sender, Types.Vote.YES);
+    }
+
     function test_getVoters() public {
         test_createProposal();
 
@@ -141,6 +160,69 @@ contract OrchestratorTest is Test {
     }
 
     //TODO : Test on counting vote with delegation, with multiple voters
+    function test_electionWithDelegation() public {
+        address delegate_1 = address(0x10); // with vote
+        address delegate_2 = address(0x11); //without vote
+        vm.startPrank(address(orchestrator)); //TODO : to remove later
+        passport.safeMint(
+            delegate_1,
+            "Samantha",
+            "Delo",
+            "Francais",
+            "04/10/1997",
+            "Quimper",
+            "1m66"
+        );
+        passport.safeMint(
+            delegate_2,
+            "Delpielo",
+            "Gator",
+            "Francais",
+            "31/12/1980",
+            "Rennes",
+            "1m76"
+        );
+        vm.stopPrank();
+
+        vm.prank(delegate_1);
+        passport.enableDelegatedMode();
+        vm.prank(delegate_2);
+        passport.enableDelegatedMode();
+
+        vm.prank(citizen_1);
+        passport.delegateVoteTo(delegate_1);
+
+        vm.prank(citizen_2);
+        passport.delegateVoteTo(delegate_1);
+
+        vm.prank(citizen_1);
+        uint256 id = createFirstProposal();
+
+        vm.prank(delegate_1);
+        orchestrator.voteProposal(Types.Vote.YES);
+
+        vm.prank(delegate_2);
+        orchestrator.voteProposal(Types.Vote.NO);
+
+        vm.prank(citizen_3);
+        orchestrator.voteProposal(Types.Vote.NO);
+
+        vm.warp(block.timestamp + 3 days + 1 seconds);
+
+        // Call to close the vote
+        vm.prank(delegate_1);
+        orchestrator.voteProposal(Types.Vote.YES);
+
+        address[] memory voters = proposal.getVoters();
+
+        assertEq(proposal.getVoterResult(voters[0]), 2);
+        assertEq(proposal.getVoterResult(voters[1]), 1);
+        assertEq(proposal.getVoterResult(voters[2]), 1);
+
+        orchestrator.countVotes();
+
+        //TODO: not finished
+    }
 
     /***************************************/
     //            PROPOSAL STATUS         //
