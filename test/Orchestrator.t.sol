@@ -28,8 +28,8 @@ contract OrchestratorTest is Test {
     }
 
     function mintThreePassports() public {
-        vm.startPrank(address(orchestrator)); //TODO : to remove later
-        passport.safeMint(
+        vm.startPrank(owner);
+        orchestrator.mintPassport(
             citizen_1,
             "Marc",
             "JOTE",
@@ -38,7 +38,7 @@ contract OrchestratorTest is Test {
             "Lille",
             "2m05"
         );
-        passport.safeMint(
+        orchestrator.mintPassport(
             citizen_2,
             "Jose",
             "Cuelva",
@@ -47,7 +47,7 @@ contract OrchestratorTest is Test {
             "Biarritz",
             "1m71"
         );
-        passport.safeMint(
+        orchestrator.mintPassport(
             citizen_3,
             "Eva",
             "Mava",
@@ -163,8 +163,8 @@ contract OrchestratorTest is Test {
     function test_electionWithDelegation() public {
         address delegate_1 = address(0x10); // with vote
         address delegate_2 = address(0x11); //without vote
-        vm.startPrank(address(orchestrator)); //TODO : to remove later
-        passport.safeMint(
+        vm.startPrank(owner); //TODO : to remove later
+        orchestrator.mintPassport(
             delegate_1,
             "Samantha",
             "Delo",
@@ -173,7 +173,7 @@ contract OrchestratorTest is Test {
             "Quimper",
             "1m66"
         );
-        passport.safeMint(
+        orchestrator.mintPassport(
             delegate_2,
             "Delpielo",
             "Gator",
@@ -434,11 +434,11 @@ contract OrchestratorTest is Test {
     function test_cantCreatePassportWhenVoteOnGoing() public {
         test_createProposal();
 
-        vm.prank(address(orchestrator));
+        vm.prank(owner);
         vm.expectRevert(
             "The passport contract is paused for now, no changing state allowed."
         );
-        passport.safeMint(
+        orchestrator.mintPassport(
             citizen_4,
             "Paul",
             "Nepamint",
