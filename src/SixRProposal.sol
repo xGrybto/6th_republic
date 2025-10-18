@@ -16,12 +16,15 @@ contract SixRProposal is Ownable {
     using Types for Types.Status;
 
     uint256 constant VOTING_PERIOD = 3 days;
+    uint256 constant PREPARATION_PERIOD = 1 days;
 
     event Created(
         uint256 indexed proposalId,
         address indexed creator,
         string title
     );
+
+    event VoteStarted(uint256 indexed proposalId);
 
     event Voted(uint256 indexed proposalId, address indexed voter);
 
@@ -51,10 +54,18 @@ contract SixRProposal is Ownable {
         _;
     }
 
+    modifier isCreated() {
+        require(
+            proposals[proposalCounter - 1].status == Types.Status.CREATED,
+            "The preparation period is over"
+        );
+        _;
+    }
+
     modifier isOngoing() {
         require(
             proposals[proposalCounter - 1].status == Types.Status.ONGOING,
-            "Proposal voted, vote is not accepted anymore"
+            "The vote is not ongoing"
         );
         _;
     }
@@ -85,7 +96,7 @@ contract SixRProposal is Ownable {
         proposal.category = _category;
         proposal.creator = sender;
         proposal.creationTime = block.timestamp;
-        proposal.status = Types.Status.ONGOING;
+        proposal.status = Types.Status.CREATED;
 
         emit Created(proposalId, sender, _title);
 
@@ -94,11 +105,24 @@ contract SixRProposal is Ownable {
         return proposalId;
     }
 
+    function startVoting() public onlyOwner isCreated {
+        uint256 proposalId = proposalCounter - 1;
+        Proposal storage proposal = proposals[proposalId];
+
+        require(
+            proposal.creationTime + PREPARATION_PERIOD < block.timestamp,
+            "The vote is not open for voting yet"
+        );
+
+        proposal.status = Types.Status.ONGOING;
+        emit VoteStarted(proposalId);
+    }
+
     function vote(
         address sender,
         Types.Vote _vote
     ) public onlyOwner isOngoing returns (bool) {
-        //TODO Checks :
+        //Checks :
         // - que le citoyen est un passeport valide (ownsValidPassport)
         // - que le vote ne soit pas délégué (précaution)
         // - la personne n'a pas déjà voté
@@ -106,7 +130,10 @@ contract SixRProposal is Ownable {
         uint256 proposalId = proposalCounter - 1;
 
         Proposal storage proposal = proposals[proposalId];
-        if (proposal.creationTime + VOTING_PERIOD < block.timestamp) {
+        if (
+            proposal.creationTime + PREPARATION_PERIOD + VOTING_PERIOD <
+            block.timestamp
+        ) {
             closeElection(proposal);
             return false;
         } else {

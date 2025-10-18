@@ -71,8 +71,12 @@ contract Orchestrator is Ownable {
             _description,
             _category
         );
-        passport.pauseContract(true);
         return id;
+    }
+
+    function startVoting() public {
+        passport.pauseContract(true);
+        proposal.startVoting();
     }
 
     function voteProposal(
