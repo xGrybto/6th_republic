@@ -13,6 +13,13 @@ contract OrchestratorTest is Test {
     SixRProposal private proposal;
     Orchestrator private orchestrator;
 
+    event MintPassport(
+        uint256 indexed passportId,
+        address indexed citizen,
+        string firstname,
+        string lastname
+    );
+
     event Created(
         uint256 indexed proposalId,
         address indexed creator,
@@ -549,6 +556,8 @@ contract OrchestratorTest is Test {
         test_createProposal();
 
         vm.prank(owner);
+        vm.expectEmit();
+        emit MintPassport(4, citizen_4, "Paul", "Eymint");
         orchestrator.mintPassport(
             citizen_4,
             "Paul",
@@ -558,7 +567,6 @@ contract OrchestratorTest is Test {
             "Brest",
             "1m72"
         );
-        //TODO : Add event
     }
 
     function test_cantCreatePassportWhenVoteOnGoing() public {
