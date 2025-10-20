@@ -7,6 +7,27 @@ import {Test, console} from "forge-std/Test.sol";
 contract SixRPassportTest is Test {
     SixRPassport private sixRContract;
 
+    event MintPassport(
+        uint256 indexed passportId,
+        address indexed citizen,
+        string firstname,
+        string lastname
+    );
+
+    event DelegatedModeEnabled(address indexed citizen);
+
+    event DelegatedModeDisabled(address indexed citizen);
+
+    event DelegationTo(
+        address indexed citizen,
+        address indexed delegatedCitizen
+    );
+
+    event RevokeDelegationTo(
+        address indexed citizen,
+        address indexed delegatedCitizen
+    );
+
     address owner = address(0x010);
     address citizen_1 = address(0x01);
     address citizen_2 = address(0x02);
@@ -59,6 +80,8 @@ contract SixRPassportTest is Test {
     function test_mintPassport() public {
         assertEq(sixRContract.balanceOf(citizen_1), 0);
         vm.prank(owner);
+        vm.expectEmit();
+        emit MintPassport(1, citizen_1, "Marc", "JOTE");
         sixRContract.safeMint(
             citizen_1,
             "Marc",
@@ -72,7 +95,7 @@ contract SixRPassportTest is Test {
         assertEq(sixRContract.ownerOf(1), citizen_1);
     }
 
-    function test_cannotHaveMoreThanOnePassport() public {
+    function test_cantHaveMoreThanOnePassport() public {
         vm.startPrank(owner);
         sixRContract.safeMint(
             citizen_1,
@@ -99,7 +122,7 @@ contract SixRPassportTest is Test {
         assertEq(sixRContract.balanceOf(citizen_1), 0);
     }
 
-    function test_cannotTransferPassportInAnyWay() public {
+    function test_cantTransferPassportInAnyWay() public {
         setUpC1();
 
         // ctz 1 wants to transfer passport to ctz 2
@@ -130,9 +153,13 @@ contract SixRPassportTest is Test {
         setUpC2();
 
         vm.prank(citizen_2);
+        vm.expectEmit();
+        emit DelegatedModeEnabled(citizen_2);
         sixRContract.enableDelegatedMode();
 
         vm.prank(citizen_1);
+        vm.expectEmit();
+        emit DelegationTo(citizen_1, citizen_2);
         sixRContract.delegateVoteTo(citizen_2);
 
         assertEq(sixRContract.s_delegatePowers(citizen_2), 1);
@@ -156,13 +183,57 @@ contract SixRPassportTest is Test {
 
         vm.startPrank(citizen_1);
         sixRContract.delegateVoteTo(citizen_2);
+        vm.expectEmit();
+        emit RevokeDelegationTo(citizen_1, citizen_2);
         sixRContract.revokeVote();
 
         assertEq(sixRContract.s_delegatePowers(citizen_2), 0);
+        assertEq(sixRContract.s_representatives(citizen_1), address(0));
         vm.stopPrank();
     }
 
-    function test_DelegateMultipleTime() public {
+    function test_disableDelegation() public {
+        setUpC1();
+        setUpC2();
+
+        vm.prank(citizen_2);
+        sixRContract.enableDelegatedMode();
+
+        vm.prank(citizen_1);
+        sixRContract.delegateVoteTo(citizen_2);
+
+        vm.prank(citizen_2);
+        vm.expectEmit();
+        emit DelegatedModeDisabled(citizen_2);
+        sixRContract.disableDelegatedMode();
+
+        assertEq(sixRContract.s_delegatePowers(citizen_2), 1);
+        assertEq(sixRContract.s_representatives(citizen_1), citizen_2);
+    }
+
+    function test_disableDelegationAndRevoke() public {
+        setUpC1();
+        setUpC2();
+
+        vm.prank(citizen_2);
+        sixRContract.enableDelegatedMode();
+
+        vm.prank(citizen_1);
+        sixRContract.delegateVoteTo(citizen_2);
+
+        vm.prank(citizen_2);
+        vm.expectEmit();
+        emit DelegatedModeDisabled(citizen_2);
+        sixRContract.disableDelegatedMode();
+
+        vm.prank(citizen_1);
+        sixRContract.revokeVote();
+
+        assertEq(sixRContract.s_delegatePowers(citizen_2), 0);
+        assertEq(sixRContract.s_representatives(citizen_1), address(0));
+    }
+
+    function test_delegateMultipleTime() public {
         setUpC1();
         setUpC2();
         setUpC3();
@@ -179,7 +250,7 @@ contract SixRPassportTest is Test {
         vm.stopPrank();
     }
 
-    function test_delegateDelegation() public {
+    function test_cantDelegateAsDelegate() public {
         setUpC1();
         setUpC2();
         setUpC3();
@@ -190,7 +261,7 @@ contract SixRPassportTest is Test {
         sixRContract.enableDelegatedMode();
 
         vm.prank(citizen_1);
-        vm.expectRevert();
+        vm.expectRevert("This citizen is a delegate");
         sixRContract.delegateVoteTo(citizen_2);
     }
 

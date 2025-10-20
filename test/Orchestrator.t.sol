@@ -583,4 +583,6 @@ contract OrchestratorTest is Test {
     //TODO : Statuts CREATED test
     // - Delegate/Mint passport during PREPARATION_PERIOD
     // - Test startVote() function -> tests to modify
+
+    // Election with revoke delegate that has vote delegated
 }

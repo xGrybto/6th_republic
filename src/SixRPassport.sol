@@ -9,6 +9,13 @@ import "@openzeppelin/utils/Base64.sol";
 contract SixRPassport is ERC721, Ownable {
     using Strings for uint256;
 
+    event MintPassport(
+        uint256 indexed passportId,
+        address indexed citizen,
+        string firstname,
+        string lastname
+    );
+
     event DelegatedModeEnabled(address indexed citizen);
 
     event DelegatedModeDisabled(address indexed citizen);
@@ -128,6 +135,8 @@ contract SixRPassport is ERC721, Ownable {
 
         _safeMint(to, s_tokenIds);
 
+        emit MintPassport(s_tokenIds, to, p_name, p_surname);
+
         return s_tokenIds;
     }
 
@@ -135,6 +144,7 @@ contract SixRPassport is ERC721, Ownable {
         public
         notPaused
         ownsValidPassport
+        isNotDelegate(msg.sender)
         notDelegated
     {
         s_delegatedMode[msg.sender] = true;
@@ -145,7 +155,7 @@ contract SixRPassport is ERC721, Ownable {
         public
         notPaused
         ownsValidPassport
-        delegated
+        isDelegate(msg.sender)
     {
         s_delegatedMode[msg.sender] = false;
         emit DelegatedModeDisabled(msg.sender);
