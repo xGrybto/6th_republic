@@ -38,6 +38,10 @@ contract OrchestratorTest is Test {
 
     event ElectionRefused(uint256 yes, uint256 no, uint256 abstention);
 
+    event DelegatedModeEnabled(address indexed citizen);
+
+    event DelegatedModeDisabled(address indexed citizen);
+
     address owner = address(0x010);
     address citizen_1 = address(0x01);
     address citizen_2 = address(0x02);
@@ -593,4 +597,115 @@ contract OrchestratorTest is Test {
     // - Test startVote() function -> tests to modify
 
     // Election with revoke delegate that has vote delegated
+    function test_electionWithRevokedDelegateStatus() public {
+        address delegate_1 = address(0x10);
+
+        vm.startPrank(owner);
+        orchestrator.mintPassport(
+            delegate_1,
+            "Samantha",
+            "Delo",
+            "Francais",
+            "04/10/1997",
+            "Quimper",
+            "1m66"
+        );
+        vm.stopPrank();
+
+        vm.prank(delegate_1);
+        passport.enableDelegatedMode();
+
+        vm.prank(citizen_1);
+        passport.delegateVoteTo(delegate_1);
+
+        vm.prank(citizen_2);
+        passport.delegateVoteTo(delegate_1);
+
+        vm.prank(delegate_1);
+        vm.expectEmit();
+        emit DelegatedModeDisabled(delegate_1);
+        passport.disableDelegatedMode();
+
+        vm.prank(citizen_1);
+        uint256 id = createAndStartVotingProposal();
+
+        vm.prank(delegate_1);
+        orchestrator.voteProposal(Types.Vote.YES);
+
+        vm.prank(citizen_1);
+        vm.expectRevert("Restricted : You have delegated your vote");
+        orchestrator.voteProposal(Types.Vote.NO);
+
+        vm.warp(block.timestamp + 3 days + 1 seconds);
+
+        // Call to close the vote
+        vm.prank(delegate_1);
+        orchestrator.voteProposal(Types.Vote.YES);
+
+        address[] memory voters = proposal.getVoters();
+
+        assertEq(proposal.getVoterResult(voters[0]), 2);
+
+        vm.expectEmit();
+        emit ElectionVoted(1, 0, 0);
+        orchestrator.countVotes();
+    }
+
+    function test_electionWithPreviouslyRevokedDelegateStatus() public {
+        address delegate_1 = address(0x10);
+
+        vm.startPrank(owner);
+        orchestrator.mintPassport(
+            delegate_1,
+            "Samantha",
+            "Delo",
+            "Francais",
+            "04/10/1997",
+            "Quimper",
+            "1m66"
+        );
+        vm.stopPrank();
+
+        vm.prank(delegate_1);
+        passport.enableDelegatedMode();
+
+        vm.prank(citizen_1);
+        passport.delegateVoteTo(delegate_1);
+
+        vm.prank(citizen_2);
+        passport.delegateVoteTo(delegate_1);
+
+        vm.startPrank(delegate_1);
+        vm.expectEmit();
+        emit DelegatedModeDisabled(delegate_1);
+        passport.disableDelegatedMode();
+
+        passport.enableDelegatedMode();
+
+        vm.stopPrank();
+
+        vm.prank(citizen_1);
+        uint256 id = createAndStartVotingProposal();
+
+        vm.prank(delegate_1);
+        orchestrator.voteProposal(Types.Vote.YES);
+
+        vm.prank(citizen_1);
+        vm.expectRevert("Restricted : You have delegated your vote");
+        orchestrator.voteProposal(Types.Vote.NO);
+
+        vm.warp(block.timestamp + 3 days + 1 seconds);
+
+        // Call to close the vote
+        vm.prank(delegate_1);
+        orchestrator.voteProposal(Types.Vote.YES);
+
+        address[] memory voters = proposal.getVoters();
+
+        assertEq(proposal.getVoterResult(voters[0]), 2);
+
+        vm.expectEmit();
+        emit ElectionVoted(3, 0, 0);
+        orchestrator.countVotes();
+    }
 }
