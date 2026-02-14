@@ -7,26 +7,15 @@ import {Test, console} from "forge-std/Test.sol";
 contract SixRPassportTest is Test {
     SixRPassport private sixRContract;
 
-    event MintPassport(
-        uint256 indexed passportId,
-        address indexed citizen,
-        string firstname,
-        string lastname
-    );
+    event MintPassport(uint256 indexed passportId, address indexed citizen, string firstname, string lastname);
 
     event DelegatedModeEnabled(address indexed citizen);
 
     event DelegatedModeDisabled(address indexed citizen);
 
-    event DelegationTo(
-        address indexed citizen,
-        address indexed delegatedCitizen
-    );
+    event DelegationTo(address indexed citizen, address indexed delegatedCitizen);
 
-    event RevokeDelegationTo(
-        address indexed citizen,
-        address indexed delegatedCitizen
-    );
+    event RevokeDelegationTo(address indexed citizen, address indexed delegatedCitizen);
 
     address owner = address(0x010);
     address citizen_1 = address(0x01);
@@ -40,41 +29,17 @@ contract SixRPassportTest is Test {
 
     function setUpC1() public {
         vm.prank(owner);
-        sixRContract.safeMint(
-            citizen_1,
-            "Marc",
-            "JOTE",
-            "Francais",
-            "01/05/2000",
-            "Lille",
-            "2m05"
-        );
+        sixRContract.safeMint(citizen_1, "Marc", "JOTE", "Francais", "01/05/2000", "Lille", "2m05");
     }
 
     function setUpC2() public {
         vm.prank(owner);
-        sixRContract.safeMint(
-            citizen_2,
-            "Jose",
-            "Cuelva",
-            "Francais",
-            "27/09/1985",
-            "Biarritz",
-            "1m71"
-        );
+        sixRContract.safeMint(citizen_2, "Jose", "Cuelva", "Francais", "27/09/1985", "Biarritz", "1m71");
     }
 
     function setUpC3() public {
         vm.prank(owner);
-        sixRContract.safeMint(
-            citizen_3,
-            "Eva",
-            "Mava",
-            "Francaise",
-            "01/11/2007",
-            "Biarritz",
-            "1m71"
-        );
+        sixRContract.safeMint(citizen_3, "Eva", "Mava", "Francaise", "01/11/2007", "Biarritz", "1m71");
     }
 
     function test_mintPassport() public {
@@ -82,40 +47,16 @@ contract SixRPassportTest is Test {
         vm.prank(owner);
         vm.expectEmit();
         emit MintPassport(1, citizen_1, "Marc", "JOTE");
-        sixRContract.safeMint(
-            citizen_1,
-            "Marc",
-            "JOTE",
-            "Francais",
-            "01/05/1000",
-            "Lille",
-            "2m05"
-        );
+        sixRContract.safeMint(citizen_1, "Marc", "JOTE", "Francais", "01/05/1000", "Lille", "2m05");
         assertEq(sixRContract.balanceOf(citizen_1), 1);
         assertEq(sixRContract.ownerOf(1), citizen_1);
     }
 
     function test_cantHaveMoreThanOnePassport() public {
         vm.startPrank(owner);
-        sixRContract.safeMint(
-            citizen_1,
-            "Marc",
-            "JOTE",
-            "Francais",
-            "01/05/2000",
-            "Lille",
-            "2m05"
-        );
+        sixRContract.safeMint(citizen_1, "Marc", "JOTE", "Francais", "01/05/2000", "Lille", "2m05");
         vm.expectRevert("This citizen has already a 6R passport");
-        sixRContract.safeMint(
-            citizen_1,
-            "Marc",
-            "JOTE",
-            "Francais",
-            "01/05/2000",
-            "Lille",
-            "2m05"
-        );
+        sixRContract.safeMint(citizen_1, "Marc", "JOTE", "Francais", "01/05/2000", "Lille", "2m05");
     }
 
     function test_citizenHasNoPassportAtInit() public view {

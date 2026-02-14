@@ -20,6 +20,6 @@ library Types {
         ENDED, // Status by default => "ENDED" (mandatory)
         ONGOING,
         COUNTING,
-        CREATED //TODO : For Draft #4
+        CREATED
     }
 }

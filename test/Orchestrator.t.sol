@@ -9,6 +9,7 @@ import {Test, console} from "forge-std/Test.sol";
 
 contract OrchestratorTest is Test {
     using Types for Types.Category;
+
     SixRPassport private passport;
     SixRProposal private proposal;
     Orchestrator private orchestrator;
@@ -106,9 +107,7 @@ contract OrchestratorTest is Test {
         return id;
     }
 
-    /***************************************/
     //            SIMPLE PROCESS          //
-    /*************************************/
 
     function test_createProposal() public {
         vm.prank(citizen_1);
@@ -128,9 +127,9 @@ contract OrchestratorTest is Test {
         assertEq(id, 1);
         assertEq(title, "First proposal");
         assertEq(description, "This is the first proposal");
-        assertEq(uint(category), uint(Types.Category.ECOLOGY));
+        assertEq(uint256(category), uint256(Types.Category.ECOLOGY));
         assertEq(creator, citizen_1);
-        assertEq(uint(status), uint(Types.Status.CREATED));
+        assertEq(uint256(status), uint256(Types.Status.CREATED));
     }
 
     function test_createAndStartVotingProposal() public {
@@ -354,9 +353,8 @@ contract OrchestratorTest is Test {
         orchestrator.countVotes();
     }
 
-    /***************************************/
     //            PROPOSAL STATUS         //
-    /*************************************/
+
     function test_cantCreateAProposalDuringOngoingProposal() public {
         vm.prank(citizen_1);
         uint256 id = createAndStartVotingProposal();
@@ -441,7 +439,7 @@ contract OrchestratorTest is Test {
         assertEq(voted, false);
 
         (, , , , , Types.Status status, ) = proposal.get(id);
-        assertEq(uint(status), uint(Types.Status.COUNTING));
+        assertEq(uint256(status), uint256(Types.Status.COUNTING));
 
         vm.expectEmit();
         emit ElectionRefused(0, 0, 0);
@@ -463,16 +461,14 @@ contract OrchestratorTest is Test {
         bool voted_2 = orchestrator.voteProposal(Types.Vote.YES);
         assertEq(voted_2, false);
         (, , , , , Types.Status status, ) = proposal.get(id);
-        assertEq(uint(status), uint(Types.Status.COUNTING));
+        assertEq(uint256(status), uint256(Types.Status.COUNTING));
         // This call will be refused because the status of the proposal
         vm.expectRevert("The vote is not ongoing");
         voted = orchestrator.voteProposal(Types.Vote.YES);
         vm.stopPrank();
     }
 
-    /***************************************/
     //            VOTING                  //
-    /*************************************/
 
     function test_voteOneTime() public {
         vm.prank(citizen_1);
@@ -497,9 +493,7 @@ contract OrchestratorTest is Test {
         vm.stopPrank();
     }
 
-    /***************************************/
     //            WITHOUT PASSPORT        //
-    /*************************************/
 
     //Create proposal without passport
 
@@ -522,9 +516,7 @@ contract OrchestratorTest is Test {
         orchestrator.voteProposal(Types.Vote.YES);
     }
 
-    /***************************************/
     //      TEST PAUSE FUNCTIONNALITY     //
-    /*************************************/
 
     function test_pausePassportNotOwner() public {
         vm.prank(citizen_1);
@@ -591,10 +583,6 @@ contract OrchestratorTest is Test {
             "1m72"
         );
     }
-
-    //TODO : Statuts CREATED test
-    // - Delegate/Mint passport during PREPARATION_PERIOD
-    // - Test startVote() function -> tests to modify
 
     // Election with revoke delegate that has vote delegated
     function test_electionWithRevokedDelegateStatus() public {

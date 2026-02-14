@@ -85,12 +85,13 @@ contract Orchestrator is Ownable {
         return proposal.vote(msg.sender, vote);
     }
 
+    //TODO : Tester si la non vérification du statut de la proposal n'est pas un pb ici
     function countVotes() public {
         address[] memory voters = proposal.getVoters();
 
         uint256[3] memory result;
 
-        for (uint index = 0; index < voters.length; index++) {
+        for (uint256 index = 0; index < voters.length; index++) {
             address voter = voters[index];
             if (passport.s_delegatedMode(voter)) {
                 result[proposal.getVoterResult(voter)] +=
@@ -101,19 +102,19 @@ contract Orchestrator is Ownable {
             }
         }
 
-        if (result[uint(Types.Vote.YES)] > result[uint(Types.Vote.NO)]) {
+        if (result[uint256(Types.Vote.YES)] > result[uint256(Types.Vote.NO)]) {
             emit ElectionVoted(
                 //proposal ID
-                result[uint(Types.Vote.YES)],
-                result[uint(Types.Vote.NO)],
-                result[uint(Types.Vote.NULL)]
+                result[uint256(Types.Vote.YES)],
+                result[uint256(Types.Vote.NO)],
+                result[uint256(Types.Vote.NULL)]
             );
         } else {
             emit ElectionRefused(
                 //proposal ID
-                result[uint(Types.Vote.YES)],
-                result[uint(Types.Vote.NO)],
-                result[uint(Types.Vote.NULL)]
+                result[uint256(Types.Vote.YES)],
+                result[uint256(Types.Vote.NO)],
+                result[uint256(Types.Vote.NULL)]
             );
         }
 

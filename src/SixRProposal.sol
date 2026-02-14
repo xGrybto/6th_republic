@@ -44,7 +44,7 @@ contract SixRProposal is Ownable {
     }
 
     uint256 public proposalCounter;
-    mapping(uint256 => Proposal) proposals;
+    mapping(uint256 => Proposal) proposals; //TODO: why a getter is needed to acces it, and not choose to put this mapping public ?
 
     modifier isEnded() {
         require(

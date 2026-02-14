@@ -9,26 +9,15 @@ import "@openzeppelin/utils/Base64.sol";
 contract SixRPassport is ERC721, Ownable {
     using Strings for uint256;
 
-    event MintPassport(
-        uint256 indexed passportId,
-        address indexed citizen,
-        string firstname,
-        string lastname
-    );
+    event MintPassport(uint256 indexed passportId, address indexed citizen, string firstname, string lastname);
 
     event DelegatedModeEnabled(address indexed citizen);
 
     event DelegatedModeDisabled(address indexed citizen);
 
-    event DelegationTo(
-        address indexed citizen,
-        address indexed delegatedCitizen
-    );
+    event DelegationTo(address indexed citizen, address indexed delegatedCitizen);
 
-    event RevokeDelegationTo(
-        address indexed citizen,
-        address indexed delegatedCitizen
-    );
+    event RevokeDelegationTo(address indexed citizen, address indexed delegatedCitizen);
 
     struct PassportAttributes {
         string name;
@@ -50,50 +39,32 @@ contract SixRPassport is ERC721, Ownable {
     bool public paused;
 
     modifier ownsValidPassport() {
-        require(
-            hasPassport(msg.sender),
-            "The citizen doesn't own a SixRPassport SBT"
-        );
+        require(hasPassport(msg.sender), "The citizen doesn't own a SixRPassport SBT");
         _;
     }
 
     modifier notPaused() {
-        require(
-            !paused,
-            "The passport contract is paused for now, no changing state allowed."
-        );
+        require(!paused, "The passport contract is paused for now, no changing state allowed.");
         _;
     }
 
     modifier isDelegate(address delegate) {
-        require(
-            s_delegatedMode[delegate] == true,
-            "This citizen is not a delegate"
-        );
+        require(s_delegatedMode[delegate] == true, "This citizen is not a delegate");
         _;
     }
 
     modifier isNotDelegate(address delegate) {
-        require(
-            s_delegatedMode[delegate] == false,
-            "This citizen is a delegate"
-        );
+        require(s_delegatedMode[delegate] == false, "This citizen is a delegate");
         _;
     }
 
     modifier delegated() {
-        require(
-            s_representatives[msg.sender] != address(0),
-            "Your vote is not delegated"
-        );
+        require(s_representatives[msg.sender] != address(0), "Your vote is not delegated");
         _;
     }
 
     modifier notDelegated() {
-        require(
-            s_representatives[msg.sender] == address(0),
-            "Your vote has already been delegated"
-        );
+        require(s_representatives[msg.sender] == address(0), "Your vote has already been delegated");
         _;
     }
 
@@ -124,14 +95,8 @@ contract SixRPassport is ERC721, Ownable {
         s_tokenIds++;
 
         //TODO : verification of correct data eg: nationality with Enum, date format)
-        s_tokenAttributes[s_tokenIds] = PassportAttributes(
-            p_name,
-            p_surname,
-            nationality,
-            birthDate,
-            birthPlace,
-            height
-        );
+        s_tokenAttributes[s_tokenIds] =
+            PassportAttributes(p_name, p_surname, nationality, birthDate, birthPlace, height);
 
         _safeMint(to, s_tokenIds);
 
@@ -140,30 +105,17 @@ contract SixRPassport is ERC721, Ownable {
         return s_tokenIds;
     }
 
-    function enableDelegatedMode()
-        public
-        notPaused
-        ownsValidPassport
-        isNotDelegate(msg.sender)
-        notDelegated
-    {
+    function enableDelegatedMode() public notPaused ownsValidPassport isNotDelegate(msg.sender) notDelegated {
         s_delegatedMode[msg.sender] = true;
         emit DelegatedModeEnabled(msg.sender);
     }
 
-    function disableDelegatedMode()
-        public
-        notPaused
-        ownsValidPassport
-        isDelegate(msg.sender)
-    {
+    function disableDelegatedMode() public notPaused ownsValidPassport isDelegate(msg.sender) {
         s_delegatedMode[msg.sender] = false;
         emit DelegatedModeDisabled(msg.sender);
     }
 
-    function delegateVoteTo(
-        address to
-    )
+    function delegateVoteTo(address to)
         public
         notPaused
         ownsValidPassport
@@ -187,9 +139,7 @@ contract SixRPassport is ERC721, Ownable {
         emit RevokeDelegationTo(msg.sender, revokedAddress);
     }
 
-    function tokenURI(
-        uint256 tokenId
-    ) public view override returns (string memory) {
+    function tokenURI(uint256 tokenId) public view override returns (string memory) {
         // require(s_tokenAttributes[tokenId], "Token does not exist");
 
         PassportAttributes memory pAttr = s_tokenAttributes[tokenId];
@@ -231,11 +181,10 @@ contract SixRPassport is ERC721, Ownable {
         // Encodage base64
         string memory encodedJson = Base64.encode(bytes(json));
 
-        return
-            string(
-                // aderyn-ignore-next-line(abi-encode-packed-hash-collision)
-                abi.encodePacked("data:application/json;base64,", encodedJson)
-            );
+        return string(
+            // aderyn-ignore-next-line(abi-encode-packed-hash-collision)
+            abi.encodePacked("data:application/json;base64,", encodedJson)
+        );
     }
 
     function transferFrom(

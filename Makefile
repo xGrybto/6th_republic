@@ -39,6 +39,9 @@ deploy-anvil:
 deploy-sepolia:
 	@forge script script/DeploySixRPassport.s.sol:DeploySixRPassport --rpc-url $(SEPOLIA_RPC_URL) --private-key $(PRIVATE_KEY) --broadcast
 
+deploy-orchestrator-sepolia:
+	@forge script script/DeployOrchestrator.s.sol:DeployOrchestrator --rpc-url $(SEPOLIA_RPC_URL) --private-key $(PRIVATE_KEY) --broadcast
+
 actions-sepolia:
 	@forge script script/SixRPassportActions.s.sol:SixRPassportActions --rpc-url $(SEPOLIA_RPC_URL) --private-key $(PRIVATE_KEY) --broadcast --verify --ffi
 
