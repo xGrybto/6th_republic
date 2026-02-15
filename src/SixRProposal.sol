@@ -38,6 +38,7 @@ contract SixRProposal is Ownable {
         Types.Category category;
         address creator;
         uint256 creationTime;
+        uint256 votingTime;
         Types.Status status;
         EnumerableMap.AddressToUintMap votes; // address => Vote
         bytes32 endBlockHash;
@@ -75,6 +76,11 @@ contract SixRProposal is Ownable {
             proposals[proposalCounter - 1].status == Types.Status.COUNTING,
             "The counting of votes is over"
         );
+        _;
+    }
+
+    modifier isNotNull(Types.Vote _vote) {
+        require(_vote != Types.Vote.NULL);
         _;
     }
 
@@ -116,12 +122,13 @@ contract SixRProposal is Ownable {
 
         proposal.status = Types.Status.ONGOING;
         emit VoteStarted(proposalId);
+        proposal.votingTime = block.timestamp;
     }
 
     function vote(
         address sender,
         Types.Vote _vote
-    ) public onlyOwner isOngoing returns (bool) {
+    ) public onlyOwner isOngoing isNotNull(_vote) returns (bool) {
         //Checks :
         // - que le citoyen est un passeport valide (ownsValidPassport)
         // - que le vote ne soit pas délégué (précaution)
@@ -130,10 +137,7 @@ contract SixRProposal is Ownable {
         uint256 proposalId = proposalCounter - 1;
 
         Proposal storage proposal = proposals[proposalId];
-        if (
-            proposal.creationTime + PREPARATION_PERIOD + VOTING_PERIOD <
-            block.timestamp
-        ) {
+        if (proposal.votingTime + VOTING_PERIOD < block.timestamp) {
             closeElection(proposal);
             return false;
         } else {

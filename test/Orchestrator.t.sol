@@ -35,9 +35,9 @@ contract OrchestratorTest is Test {
 
     event Ended(uint256 indexed proposalId, bytes32 indexed _blockhash);
 
-    event ElectionVoted(uint256 yes, uint256 no, uint256 abstention);
+    event ElectionVoted(uint256 indexed proposalId, uint256 yes, uint256 no);
 
-    event ElectionRefused(uint256 yes, uint256 no, uint256 abstention);
+    event ElectionRefused(uint256 indexed proposalId, uint256 yes, uint256 no);
 
     event DelegatedModeEnabled(address indexed citizen);
 
@@ -285,7 +285,7 @@ contract OrchestratorTest is Test {
         assertEq(proposal.getVoterResult(voters[2]), 1);
 
         vm.expectEmit();
-        emit ElectionVoted(3, 2, 0);
+        emit ElectionVoted(id, 3, 2);
         orchestrator.countVotes();
     }
 
@@ -334,7 +334,7 @@ contract OrchestratorTest is Test {
         orchestrator.voteProposal(Types.Vote.NO);
 
         vm.prank(citizen_3);
-        orchestrator.voteProposal(Types.Vote.NULL);
+        orchestrator.voteProposal(Types.Vote.NO);
 
         vm.warp(block.timestamp + 3 days + 1 seconds);
 
@@ -346,10 +346,10 @@ contract OrchestratorTest is Test {
 
         assertEq(proposal.getVoterResult(voters[0]), 2);
         assertEq(proposal.getVoterResult(voters[1]), 1);
-        assertEq(proposal.getVoterResult(voters[2]), 0);
+        assertEq(proposal.getVoterResult(voters[2]), 1);
 
         vm.expectEmit();
-        emit ElectionRefused(2, 2, 1);
+        emit ElectionRefused(id, 2, 3);
         orchestrator.countVotes();
     }
 
@@ -442,7 +442,7 @@ contract OrchestratorTest is Test {
         assertEq(uint256(status), uint256(Types.Status.COUNTING));
 
         vm.expectEmit();
-        emit ElectionRefused(0, 0, 0);
+        emit ElectionRefused(id, 0, 0);
         orchestrator.countVotes();
 
         vm.stopPrank();
@@ -635,7 +635,7 @@ contract OrchestratorTest is Test {
         assertEq(proposal.getVoterResult(voters[0]), 2);
 
         vm.expectEmit();
-        emit ElectionVoted(1, 0, 0);
+        emit ElectionVoted(id, 1, 0);
         orchestrator.countVotes();
     }
 
@@ -693,7 +693,7 @@ contract OrchestratorTest is Test {
         assertEq(proposal.getVoterResult(voters[0]), 2);
 
         vm.expectEmit();
-        emit ElectionVoted(3, 0, 0);
+        emit ElectionVoted(id, 3, 0);
         orchestrator.countVotes();
     }
 }

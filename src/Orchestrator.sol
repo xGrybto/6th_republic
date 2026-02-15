@@ -8,12 +8,14 @@ import {SixRProposal} from "./SixRProposal.sol";
 import {Types} from "./Types.sol";
 
 contract Orchestrator is Ownable {
-    event ElectionVoted(uint256 yes, uint256 no, uint256 abstention);
+    event ElectionVoted(uint256 indexed proposalId, uint256 yes, uint256 no);
 
-    event ElectionRefused(uint256 yes, uint256 no, uint256 abstention);
+    event ElectionRefused(uint256 indexed proposalId, uint256 yes, uint256 no);
 
     SixRPassport public passport;
     SixRProposal public proposal;
+
+    uint256 private lastProposalId;
 
     constructor() Ownable(msg.sender) {
         passport = new SixRPassport();
@@ -71,6 +73,7 @@ contract Orchestrator is Ownable {
             _description,
             _category
         );
+        lastProposalId = id;
         return id;
     }
 
@@ -104,17 +107,15 @@ contract Orchestrator is Ownable {
 
         if (result[uint256(Types.Vote.YES)] > result[uint256(Types.Vote.NO)]) {
             emit ElectionVoted(
-                //proposal ID
+                lastProposalId,
                 result[uint256(Types.Vote.YES)],
-                result[uint256(Types.Vote.NO)],
-                result[uint256(Types.Vote.NULL)]
+                result[uint256(Types.Vote.NO)]
             );
         } else {
             emit ElectionRefused(
-                //proposal ID
+                lastProposalId,
                 result[uint256(Types.Vote.YES)],
-                result[uint256(Types.Vote.NO)],
-                result[uint256(Types.Vote.NULL)]
+                result[uint256(Types.Vote.NO)]
             );
         }
 
