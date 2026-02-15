@@ -41,7 +41,7 @@ Topics to discuss about :
 - Is it fair and not risky to give to each citizen a voting power of one ? If not, how can we fairly adjust voting power to the right persons (which is hard to define)/the experts in the dedicated domain of the proposal, ...
 - How can we deal with the privacy (of voting, delegating, ...) => ZKPs ?
 
-## Current system - Draft n°3
+## Current system - Draft n°4
 
 ### Key concepts
 - "Soulbound Token" (SBT) for uniq passport
@@ -53,13 +53,14 @@ Topics to discuss about :
 ### Passport functionnalities
 - Mint of a passport
 - Delegation logic (delegate, revoke delegation)
+- Enable/Disable delegation mode. Default : disable
 
 ### Proposal functionnalities
 - Create a proposal
     - Any citizen with a passport can open a proposal
-    - Directly ongoing vote when proposal is created
+    - The proposal is in preparation for 1 day. During this time, you can manage your delegate status and your delegation.
     - Only one proposal at a time: a new proposal can't be created as long as the one before is not ended.
+- Start the vote of the proposal : the vote is open for 3 days. During this period, you can't manage delegation functionnalities anymore.
 - Vote for a proposal : YES, NO, NULL (not recommended)
-- End a proposal with timeout duration : need to call "vote" function when the time of vote is over.
+- End a proposal with timeout duration : need to call "vote" function when the period of vote is over.
 - Counting vote onchain, add the state "Counting" before ending a proposal
-- Block every delegation and passport creation during an ongoing proposal
