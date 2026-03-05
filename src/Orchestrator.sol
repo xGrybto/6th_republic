@@ -8,14 +8,10 @@ import {SixRProposal} from "./SixRProposal.sol";
 import {Types} from "./Types.sol";
 
 contract Orchestrator is Ownable {
-    event ElectionVoted(uint256 indexed proposalId, uint256 yes, uint256 no);
-
-    event ElectionRefused(uint256 indexed proposalId, uint256 yes, uint256 no);
+    event ElectionResult(uint256 indexed proposalId, uint256 yes, uint256 no);
 
     SixRPassport public passport;
     SixRProposal public proposal;
-
-    uint256 private lastProposalId;
 
     constructor() Ownable(msg.sender) {
         passport = new SixRPassport();
@@ -73,54 +69,52 @@ contract Orchestrator is Ownable {
             _description,
             _category
         );
-        lastProposalId = id;
         return id;
     }
 
-    function startVoting() public {
+    function startVoting(uint256 proposalId) public {
+        proposal.startVoting(proposalId);
         passport.pauseContract(true);
-        proposal.startVoting();
     }
 
     function voteProposal(
+        uint256 proposalId,
         Types.Vote vote
     ) public ownsValidPassport voteNotDelegated returns (bool) {
-        return proposal.vote(msg.sender, vote);
+        bool voted = proposal.vote(proposalId, msg.sender, vote);
+
+        if (!voted) {
+            passport.pauseContract(false);
+        }
+
+        return voted;
     }
 
-    //TODO : Tester si la non vérification du statut de la proposal n'est pas un pb ici
-    function countVotes() public {
-        address[] memory voters = proposal.getVoters();
+    //TODO : uniquement et une fois lorsque la proposition est terminée
+    function countVotes(uint256 proposalId) public {
+        require(
+            proposal.getStatus(proposalId) == Types.Status.ENDED,
+            "The vote is not closed yet"
+        );
+        address[] memory voters = proposal.getVoters(proposalId);
 
         uint256[3] memory result;
 
         for (uint256 index = 0; index < voters.length; index++) {
             address voter = voters[index];
             if (passport.s_delegatedMode(voter)) {
-                result[proposal.getVoterResult(voter)] +=
+                result[proposal.getVote(proposalId, voter)] +=
                     passport.s_delegatePowers(voter) +
                     1; // Vote attribution : delegatePower + citizenVote (1)
             } else {
-                result[proposal.getVoterResult(voter)]++; // Vote attribution : citizenVote (1)
+                result[proposal.getVote(proposalId, voter)]++; // Vote attribution : citizenVote (1)
             }
         }
 
-        if (result[uint256(Types.Vote.YES)] > result[uint256(Types.Vote.NO)]) {
-            emit ElectionVoted(
-                lastProposalId,
-                result[uint256(Types.Vote.YES)],
-                result[uint256(Types.Vote.NO)]
-            );
-        } else {
-            emit ElectionRefused(
-                lastProposalId,
-                result[uint256(Types.Vote.YES)],
-                result[uint256(Types.Vote.NO)]
-            );
-        }
-
-        proposal.endProposal();
-
-        passport.pauseContract(false);
+        emit ElectionResult(
+            proposalId,
+            result[uint256(Types.Vote.YES)],
+            result[uint256(Types.Vote.NO)]
+        );
     }
 }

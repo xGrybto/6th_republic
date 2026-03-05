@@ -19,7 +19,6 @@ library Types {
     enum Status {
         ENDED, // Status by default => "ENDED" (mandatory)
         ONGOING,
-        COUNTING,
         CREATED
     }
 }
