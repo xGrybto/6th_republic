@@ -112,7 +112,7 @@ contract SixRPassportTest is Test {
 
         vm.prank(citizen_1);
         vm.expectRevert("Your vote is not delegated");
-        sixRContract.revokeVote();
+        sixRContract.revokeDelegation();
     }
 
     function test_revokeAfterDelegation() public {
@@ -126,7 +126,7 @@ contract SixRPassportTest is Test {
         sixRContract.delegateVoteTo(citizen_2);
         vm.expectEmit();
         emit RevokeDelegationTo(citizen_1, citizen_2);
-        sixRContract.revokeVote();
+        sixRContract.revokeDelegation();
 
         assertEq(sixRContract.s_delegatePowers(citizen_2), 0);
         assertEq(sixRContract.s_representatives(citizen_1), address(0));
@@ -168,7 +168,7 @@ contract SixRPassportTest is Test {
         sixRContract.disableDelegatedMode();
 
         vm.prank(citizen_1);
-        sixRContract.revokeVote();
+        sixRContract.revokeDelegation();
 
         assertEq(sixRContract.s_delegatePowers(citizen_2), 0);
         assertEq(sixRContract.s_representatives(citizen_1), address(0));
