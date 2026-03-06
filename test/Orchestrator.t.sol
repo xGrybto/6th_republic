@@ -14,6 +14,9 @@ contract OrchestratorTest is Test {
     SixRProposal private proposal;
     Orchestrator private orchestrator;
 
+    uint256 constant VOTING_PERIOD = 30 minutes;
+    uint256 constant PREPARATION_PERIOD = 10 minutes;
+
     event MintPassport(
         uint256 indexed passportId,
         address indexed citizen,
@@ -97,7 +100,7 @@ contract OrchestratorTest is Test {
     function createAndStartVotingProposal() public returns (uint256) {
         uint256 id = createFirstProposal();
 
-        vm.warp(block.timestamp + 1 days + 1 seconds);
+        vm.warp(block.timestamp + PREPARATION_PERIOD + 1 seconds);
         orchestrator.startVoting(id);
 
         return id;
@@ -132,7 +135,7 @@ contract OrchestratorTest is Test {
         vm.prank(citizen_1);
         uint256 id = createFirstProposal();
 
-        vm.warp(block.timestamp + 1 days + 1 seconds);
+        vm.warp(block.timestamp + PREPARATION_PERIOD + 1 seconds);
         vm.expectEmit();
         emit VoteStarted(1);
 
@@ -210,7 +213,7 @@ contract OrchestratorTest is Test {
         vm.prank(citizen_1);
         orchestrator.voteProposal(id, Types.Vote.YES);
 
-        vm.warp(block.timestamp + 3 days + 1 seconds);
+        vm.warp(block.timestamp + VOTING_PERIOD + 1 seconds);
 
         vm.prank(citizen_2);
         vm.expectEmit();
@@ -271,7 +274,7 @@ contract OrchestratorTest is Test {
         vm.prank(citizen_3);
         orchestrator.voteProposal(id, Types.Vote.NO);
 
-        vm.warp(block.timestamp + 3 days + 1 seconds);
+        vm.warp(block.timestamp + VOTING_PERIOD + 1 seconds);
 
         // Call to close the vote
         vm.prank(delegate_1);
@@ -335,7 +338,7 @@ contract OrchestratorTest is Test {
         vm.prank(citizen_3);
         orchestrator.voteProposal(id, Types.Vote.NO);
 
-        vm.warp(block.timestamp + 3 days + 1 seconds);
+        vm.warp(block.timestamp + VOTING_PERIOD + 1 seconds);
 
         // Call to close the vote
         vm.prank(delegate_1);
@@ -371,7 +374,7 @@ contract OrchestratorTest is Test {
         vm.prank(citizen_1);
         uint256 id = createAndStartVotingProposal();
 
-        vm.warp(block.timestamp + 3 days + 1 seconds);
+        vm.warp(block.timestamp + VOTING_PERIOD + 1 seconds);
 
         // Close the voting period by calling voteProposal function after 3 days
         vm.prank(citizen_1);
@@ -394,7 +397,7 @@ contract OrchestratorTest is Test {
         vm.startPrank(citizen_1);
         uint256 id = createAndStartVotingProposal();
 
-        vm.warp(block.timestamp + 3 days + 1 seconds);
+        vm.warp(block.timestamp + VOTING_PERIOD + 1 seconds);
         // This call will close the vote of the proposal
         vm.expectEmit();
         emit Ended(1, blockhash(block.number));
@@ -417,7 +420,7 @@ contract OrchestratorTest is Test {
 
         assertEq(voted, true);
 
-        vm.warp(block.timestamp + 3 days + 1 seconds);
+        vm.warp(block.timestamp + VOTING_PERIOD + 1 seconds);
         // This call will close the vote of the proposal
         bool voted_2 = orchestrator.voteProposal(id, Types.Vote.YES);
         assertEq(voted_2, false);
@@ -495,7 +498,7 @@ contract OrchestratorTest is Test {
 
         passport.enableDelegatedMode();
 
-        vm.warp(block.timestamp + 1 days + 1 seconds);
+        vm.warp(block.timestamp + PREPARATION_PERIOD + 1 seconds);
 
         assertEq(passport.paused(), false);
 
@@ -586,7 +589,7 @@ contract OrchestratorTest is Test {
         vm.expectRevert("Restricted : You have delegated your vote");
         orchestrator.voteProposal(id, Types.Vote.NO);
 
-        vm.warp(block.timestamp + 3 days + 1 seconds);
+        vm.warp(block.timestamp + VOTING_PERIOD + 1 seconds);
 
         // Call to close the vote
         vm.prank(delegate_1);
@@ -644,7 +647,7 @@ contract OrchestratorTest is Test {
         vm.expectRevert("Restricted : You have delegated your vote");
         orchestrator.voteProposal(id, Types.Vote.NO);
 
-        vm.warp(block.timestamp + 3 days + 1 seconds);
+        vm.warp(block.timestamp + VOTING_PERIOD + 1 seconds);
 
         // Call to close the vote
         vm.prank(delegate_1);

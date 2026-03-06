@@ -15,8 +15,8 @@ contract SixRProposal is Ownable {
     using Types for Types.Vote;
     using Types for Types.Status;
 
-    uint256 constant VOTING_PERIOD = 3 days;
-    uint256 constant PREPARATION_PERIOD = 1 days;
+    uint256 constant VOTING_PERIOD = 30 minutes;
+    uint256 constant PREPARATION_PERIOD = 10 minutes;
 
     event Created(
         uint256 indexed proposalId,
