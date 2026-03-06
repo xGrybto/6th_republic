@@ -275,6 +275,8 @@ contract OrchestratorTest is Test {
 
         // Call to close the vote
         vm.prank(delegate_1);
+        vm.expectEmit();
+        emit ElectionResult(id, 3, 2);
         orchestrator.voteProposal(id, Types.Vote.YES);
 
         vm.startPrank(address(orchestrator));
@@ -284,10 +286,6 @@ contract OrchestratorTest is Test {
         assertEq(proposal.getVote(id, voters[1]), 1);
         assertEq(proposal.getVote(id, voters[2]), 1);
         vm.stopPrank();
-
-        vm.expectEmit();
-        emit ElectionResult(id, 3, 2);
-        orchestrator.countVotes(id);
     }
 
     function test_refusedElectionWithDelegation() public {
@@ -341,6 +339,8 @@ contract OrchestratorTest is Test {
 
         // Call to close the vote
         vm.prank(delegate_1);
+        vm.expectEmit();
+        emit ElectionResult(id, 2, 3);
         orchestrator.voteProposal(id, Types.Vote.YES);
 
         vm.startPrank(address(orchestrator));
@@ -350,10 +350,6 @@ contract OrchestratorTest is Test {
         assertEq(proposal.getVote(id, voters[1]), 1);
         assertEq(proposal.getVote(id, voters[2]), 1);
         vm.stopPrank();
-
-        vm.expectEmit();
-        emit ElectionResult(id, 2, 3);
-        orchestrator.countVotes(id);
     }
 
     //            PROPOSAL STATUS         //
@@ -402,15 +398,13 @@ contract OrchestratorTest is Test {
         // This call will close the vote of the proposal
         vm.expectEmit();
         emit Ended(1, blockhash(block.number));
+        vm.expectEmit();
+        emit ElectionResult(id, 0, 0);
         bool voted = orchestrator.voteProposal(id, Types.Vote.YES);
         assertEq(voted, false);
 
         (, , , , , Types.Status status, ) = proposal.get(id);
         assertEq(uint256(status), uint256(Types.Status.ENDED));
-
-        vm.expectEmit();
-        emit ElectionResult(id, 0, 0);
-        orchestrator.countVotes(id);
 
         vm.stopPrank();
     }
@@ -596,6 +590,8 @@ contract OrchestratorTest is Test {
 
         // Call to close the vote
         vm.prank(delegate_1);
+        vm.expectEmit();
+        emit ElectionResult(id, 1, 0);
         orchestrator.voteProposal(id, Types.Vote.YES);
 
         vm.startPrank(address(orchestrator));
@@ -603,10 +599,6 @@ contract OrchestratorTest is Test {
 
         assertEq(proposal.getVote(id, voters[0]), 2);
         vm.stopPrank();
-
-        vm.expectEmit();
-        emit ElectionResult(id, 1, 0);
-        orchestrator.countVotes(id);
     }
 
     function test_electionWithPreviouslyRevokedDelegateStatus() public {
@@ -656,6 +648,8 @@ contract OrchestratorTest is Test {
 
         // Call to close the vote
         vm.prank(delegate_1);
+        vm.expectEmit();
+        emit ElectionResult(id, 3, 0);
         orchestrator.voteProposal(id, Types.Vote.YES);
 
         vm.startPrank(address(orchestrator));
@@ -663,9 +657,5 @@ contract OrchestratorTest is Test {
 
         assertEq(proposal.getVote(id, voters[0]), 2);
         vm.stopPrank();
-
-        vm.expectEmit();
-        emit ElectionResult(id, 3, 0);
-        orchestrator.countVotes(id);
     }
 }

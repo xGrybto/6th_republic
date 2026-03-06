@@ -85,13 +85,16 @@ contract Orchestrator is Ownable {
 
         if (!voted) {
             passport.pauseContract(false);
+            (uint256 yes_count, uint256 no_count) = countVotes(proposalId);
+            emit ElectionResult(proposalId, yes_count, no_count);
         }
 
         return voted;
     }
 
-    //TODO : uniquement et une fois lorsque la proposition est terminée
-    function countVotes(uint256 proposalId) public {
+    function countVotes(
+        uint256 proposalId
+    ) public view returns (uint256 yes, uint256 no) {
         require(
             proposal.getStatus(proposalId) == Types.Status.ENDED,
             "The vote is not closed yet"
@@ -111,8 +114,7 @@ contract Orchestrator is Ownable {
             }
         }
 
-        emit ElectionResult(
-            proposalId,
+        return (
             result[uint256(Types.Vote.YES)],
             result[uint256(Types.Vote.NO)]
         );

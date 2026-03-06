@@ -63,4 +63,4 @@ Topics to discuss about :
 - Vote for a proposal : YES, NO
 - End a proposal with timeout duration : need to call "vote" function when the period of vote is over.
     - Any participant/passport holder can close the vote, even if they already voted
-- The count of votes is done directly when it ends, and emit a "VoteResult" event (the outcome of the vote is not decided on-chain as in previous draft).
+- The count of votes is done directly when it ends, and emit a "ElectionResult" event (the outcome of the vote is not decided on-chain as in previous draft).
