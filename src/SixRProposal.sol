@@ -128,6 +128,10 @@ contract SixRProposal is Ownable {
         } else {
             require(!proposal.votes.contains(sender), "You have already voted");
             require(_vote != Types.Vote.NULL, "The null vote is not accepted"); // isNotNull
+            require(
+                uint8(_vote) <= uint8(type(Types.Vote).max),
+                "This value is not accepted as a vote"
+            );
             proposal.votes.set(sender, uint256(_vote)); // No need to verify if the key is new because of the check on votes above
             emit Voted(proposalId, sender);
             return true;

@@ -668,7 +668,4 @@ contract OrchestratorTest is Test {
         emit ElectionResult(id, 3, 0);
         orchestrator.countVotes(id);
     }
-
-    //TODO : voteProposal(), tester s'il est possible de passer passport.pauseContract(false); l.92 en dehors de la fin du vote
-    //TODO : Verify if we can input any integer as a vote
 }
