@@ -1,12 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.20;
 
-import "@openzeppelin/utils/Strings.sol";
-import "@openzeppelin/utils/Base64.sol";
 import "@openzeppelin/utils/structs/EnumerableMap.sol";
 import "@openzeppelin/access/Ownable.sol";
 
-import {SixRPassport} from "./SixRPassport.sol";
 import {Types} from "./Types.sol";
 
 /// @title 6th Republic — SixRProposal
@@ -202,12 +199,13 @@ contract SixRProposal is Ownable {
 
     /// @notice Closes a proposal by setting its status to ENDED and recording the closing block hash.
     /// @dev Private. Called internally by vote() when the voting period has elapsed.
-    ///      The endBlockHash serves as a tamper-evidence seal on the final state.
+    ///      Uses blockhash(block.number - 1) as a tamper-evidence seal: the current block's hash is
+    ///      not yet available to the EVM, so block.number would always return bytes32(0).
     /// @param proposalId The ID of the proposal to close.
     function close(uint256 proposalId) private {
         Proposal storage proposal = proposals[proposalId];
         proposal.status = Types.Status.ENDED;
-        proposal.endBlockHash = blockhash(block.number);
+        proposal.endBlockHash = blockhash(block.number - 1);
         emit Ended(proposalId, proposal.endBlockHash);
     }
 

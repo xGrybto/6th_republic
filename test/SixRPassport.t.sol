@@ -133,7 +133,7 @@ contract SixRPassportTest is Test {
         vm.stopPrank();
     }
 
-    function test_disableDelegation() public {
+    function test_disableDelegationDoesNotRevokeExistingDelegations() public {
         setUpC1();
         setUpC2();
 
