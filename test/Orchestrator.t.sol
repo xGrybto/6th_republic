@@ -120,6 +120,7 @@ contract OrchestratorTest is Test {
             Types.Category category,
             address creator,
             ,
+            ,
             Types.Status status,
 
         ) = proposal.get(id);
@@ -217,7 +218,7 @@ contract OrchestratorTest is Test {
 
         vm.prank(citizen_2);
         vm.expectEmit();
-        emit Ended(1, blockhash(block.number));
+        emit Ended(1, blockhash(block.number - 1));
         orchestrator.voteProposal(id, Types.Vote.YES);
 
         vm.startPrank(address(orchestrator));
@@ -400,13 +401,13 @@ contract OrchestratorTest is Test {
         vm.warp(block.timestamp + VOTING_PERIOD + 1 seconds);
         // This call will close the vote of the proposal
         vm.expectEmit();
-        emit Ended(1, blockhash(block.number));
+        emit Ended(1, blockhash(block.number - 1));
         vm.expectEmit();
         emit ElectionResult(id, 0, 0);
         bool voted = orchestrator.voteProposal(id, Types.Vote.YES);
         assertEq(voted, false);
 
-        (, , , , , Types.Status status, ) = proposal.get(id);
+        (, , , , , , Types.Status status, ) = proposal.get(id);
         assertEq(uint256(status), uint256(Types.Status.ENDED));
 
         vm.stopPrank();
@@ -424,7 +425,7 @@ contract OrchestratorTest is Test {
         // This call will close the vote of the proposal
         bool voted_2 = orchestrator.voteProposal(id, Types.Vote.YES);
         assertEq(voted_2, false);
-        (, , , , , Types.Status status, ) = proposal.get(id);
+        (, , , , , , Types.Status status, ) = proposal.get(id);
         assertEq(uint256(status), uint256(Types.Status.ENDED));
         // This call will be refused because the status of the proposal
         vm.expectRevert("The vote is not ongoing");

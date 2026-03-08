@@ -18,10 +18,10 @@ contract SixRProposal is Ownable {
     using Types for Types.Status;
 
     /// @notice Duration of the voting window after startVoting is called.
-    uint256 constant VOTING_PERIOD = 30 minutes;
+    uint256 public constant VOTING_PERIOD = 30 minutes;
 
     /// @notice Minimum delay between proposal creation and the opening of the voting window.
-    uint256 constant PREPARATION_PERIOD = 10 minutes;
+    uint256 public constant PREPARATION_PERIOD = 10 minutes;
 
     /// @notice Emitted when a new proposal is created.
     /// @param proposalId The ID of the newly created proposal.
@@ -245,6 +245,7 @@ contract SixRProposal is Ownable {
     /// @return category The domain category.
     /// @return creator The address of the proposal creator.
     /// @return creationTime The block timestamp at creation.
+    /// @return votingTime The block timestamp when voting starts.
     /// @return status The current status (ENDED, CREATED, or ONGOING).
     /// @return endBlockHash The block hash recorded at closure (bytes32(0) if not yet closed).
     function get(
@@ -258,6 +259,7 @@ contract SixRProposal is Ownable {
             Types.Category category,
             address,
             uint256,
+            uint256,
             Types.Status status,
             // EnumerableMap.AddressToUintMap,
             bytes32
@@ -270,6 +272,7 @@ contract SixRProposal is Ownable {
             p.category,
             p.creator,
             p.creationTime,
+            p.votingTime,
             p.status,
             // p.votes,
             p.endBlockHash
