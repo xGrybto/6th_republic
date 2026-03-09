@@ -20,15 +20,7 @@ contract SixRPassportActions is Script {
 
     function mintNftOnContract(address contractAddress) public {
         vm.startBroadcast();
-        SixRPassport(contractAddress).safeMint(
-            me,
-            "Alice",
-            "Bob",
-            "French",
-            "11/06/1990",
-            "Paris",
-            "1m60"
-        );
+        SixRPassport(contractAddress).safeMint(me, "Alice", "Bob", "French", "11/06/1990", "Paris", "1m60");
         vm.stopBroadcast();
         console.log(SixRPassport(contractAddress).tokenURI(1));
     }

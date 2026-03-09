@@ -16,7 +16,7 @@ Maintaining a model like this remains complicated because there are many constra
 - the need to vote regularly (travel, availability, etc.)
 - weakening of the political culture of the people, who have little responsibility and little knowledge of the issues
 
-The 6th Republic is trying to bring a new way of voting, through the concept of blockchain, smart contracts and decentralized autonomous organization (DAO). 
+The 6th Republic is trying to bring a new way of voting, through the concepts of blockchain, smart contracts and decentralized autonomous organization (DAO). 
 This technologies offer a big opportunity to get closer to a participatory democracy, which I'm sure is way better than old/representative democracy.
 
 Here is how I see it could works for now :
@@ -29,11 +29,10 @@ Here is how I see it could works for now :
     - can revoke at any time his delegation(s) for future proposition
     - cannot delegate a signature
       
-- A proposal can be signed by citizens
-- A proposal is turned into a bill after X signatures
+- A proposal needs to reach a certain number of signatures before it can be put to a vote
 
-- A bill has 3 answers possible : YES, NO, (VETO)
-- A bill is voted when the majority is voted.
+- A vote has 3 answers possible : YES, NO, (VETO)
+- A proposal is voted when the majority is voted.
 
 Topics to discuss about :
 - How trust a citizen numerical decision (vote, delegation, signature) ? Can we trust current KYC model ?
@@ -61,6 +60,7 @@ Topics to discuss about :
     - The proposal is in preparation for 1 day. During this time, you can manage your delegate status and your delegation.
     - Only one proposal at a time: a new proposal can't be created as long as the one before is not ended.
 - Start the vote of the proposal : the vote is open for 3 days. During this period, you can't manage delegation functionnalities anymore.
-- Vote for a proposal : YES, NO, NULL (not recommended)
+- Vote for a proposal : YES, NO
 - End a proposal with timeout duration : need to call "vote" function when the period of vote is over.
-- Counting vote onchain, add the state "Counting" before ending a proposal
+    - Any participant/passport holder can close the vote, even if they already voted
+- The count of votes is done directly when it ends, and emit a "ElectionResult" event (the outcome of the vote is not decided on-chain as in previous draft).
