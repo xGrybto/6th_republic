@@ -55,30 +55,14 @@ contract Orchestrator is Ownable {
     /// @dev Only callable by the owner (admin). Each address can only hold one passport.
     ///      Delegates to SixRPassport.safeMint.
     /// @param to The address of the citizen receiving the passport.
-    /// @param p_name First name of the citizen.
-    /// @param p_surname Last name of the citizen.
+    /// @param p_pseudo First name of the citizen.
     /// @param nationality Nationality of the citizen.
-    /// @param birthDate Date of birth (free-form string, format not enforced on-chain).
-    /// @param birthPlace Place of birth.
-    /// @param height Height of the citizen.
     function mintPassport(
         address to,
-        string memory p_name,
-        string memory p_surname,
-        string memory nationality,
-        string memory birthDate,
-        string memory birthPlace,
-        string memory height
-    ) public onlyOwner {
-        passport.safeMint(
-            to,
-            p_name,
-            p_surname,
-            nationality,
-            birthDate,
-            birthPlace,
-            height
-        );
+        string memory p_pseudo,
+        string memory nationality
+    ) external onlyOwner {
+        passport.safeMint(to, p_pseudo, nationality);
     }
 
     //// Proposal functionnalities ////

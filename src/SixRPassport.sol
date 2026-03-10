@@ -18,9 +18,12 @@ contract SixRPassport is ERC721, Ownable {
     /// @notice Emitted when a new passport is minted for a citizen.
     /// @param passportId The token ID of the newly minted passport.
     /// @param citizen The address of the citizen receiving the passport.
-    /// @param firstname First name stored in the passport.
-    /// @param lastname Last name stored in the passport.
-    event MintPassport(uint256 indexed passportId, address indexed citizen, string firstname, string lastname);
+    /// @param pseudo Pseudo stored in the passport.
+    event MintPassport(
+        uint256 indexed passportId,
+        address indexed citizen,
+        string pseudo
+    );
 
     /// @notice Emitted when a citizen enables delegated mode, making themselves available as a representative.
     /// @param citizen The address that enabled delegated mode.
@@ -33,21 +36,23 @@ contract SixRPassport is ERC721, Ownable {
     /// @notice Emitted when a citizen delegates their vote to a representative.
     /// @param citizen The address delegating their vote.
     /// @param delegatedCitizen The address of the representative receiving the delegation.
-    event DelegationTo(address indexed citizen, address indexed delegatedCitizen);
+    event DelegationTo(
+        address indexed citizen,
+        address indexed delegatedCitizen
+    );
 
     /// @notice Emitted when a citizen revokes their vote delegation.
     /// @param citizen The address revoking the delegation.
     /// @param delegatedCitizen The address of the representative whose power is decremented.
-    event RevokeDelegationTo(address indexed citizen, address indexed delegatedCitizen);
+    event RevokeDelegationTo(
+        address indexed citizen,
+        address indexed delegatedCitizen
+    );
 
     /// @notice On-chain identity attributes stored per passport token.
     struct PassportAttributes {
-        string name;
-        string surname;
+        string pseudo;
         string nationality;
-        string birthDate;
-        string birthPlace;
-        string height;
     }
 
     /// @dev Internal counter for token IDs. Incremented before each mint (starts at 1).
@@ -71,39 +76,57 @@ contract SixRPassport is ERC721, Ownable {
 
     /// @notice Restricts access to citizens who own a valid SixRPassport SBT.
     modifier ownsValidPassport() {
-        require(hasPassport(msg.sender), "The citizen doesn't own a SixRPassport SBT");
+        require(
+            hasPassport(msg.sender),
+            "The citizen doesn't own a SixRPassport SBT"
+        );
         _;
     }
 
     /// @notice Prevents state-changing calls while the contract is paused (during a voting period).
     modifier notPaused() {
-        require(!paused, "The passport contract is paused for now, no changing state allowed.");
+        require(
+            !paused,
+            "The passport contract is paused for now, no changing state allowed."
+        );
         _;
     }
 
     /// @notice Ensures the given address has enabled delegated mode.
     /// @param delegate The address to check.
     modifier isDelegate(address delegate) {
-        require(s_delegatedMode[delegate] == true, "This citizen is not a delegate");
+        require(
+            s_delegatedMode[delegate] == true,
+            "This citizen is not a delegate"
+        );
         _;
     }
 
     /// @notice Ensures the given address has not enabled delegated mode.
     /// @param delegate The address to check.
     modifier isNotDelegate(address delegate) {
-        require(s_delegatedMode[delegate] == false, "This citizen is a delegate");
+        require(
+            s_delegatedMode[delegate] == false,
+            "This citizen is a delegate"
+        );
         _;
     }
 
     /// @notice Ensures the caller has an active vote delegation.
     modifier delegated() {
-        require(s_representatives[msg.sender] != address(0), "Your vote is not delegated");
+        require(
+            s_representatives[msg.sender] != address(0),
+            "Your vote is not delegated"
+        );
         _;
     }
 
     /// @notice Ensures the caller has not yet delegated their vote.
     modifier notDelegated() {
-        require(s_representatives[msg.sender] == address(0), "Your vote has already been delegated");
+        require(
+            s_representatives[msg.sender] == address(0),
+            "Your vote has already been delegated"
+        );
         _;
     }
 
@@ -132,33 +155,24 @@ contract SixRPassport is ERC721, Ownable {
     /// @dev Only callable by the owner (Orchestrator). Reverts if the recipient already holds a passport.
     ///      Token metadata is stored fully on-chain and exposed via tokenURI.
     /// @param to The address of the citizen receiving the passport.
-    /// @param p_name First name.
-    /// @param p_surname Last name.
+    /// @param pseudo Pseudo.
     /// @param nationality Nationality (free-form string, format not enforced on-chain).
-    /// @param birthDate Date of birth (free-form string, format not enforced on-chain).
-    /// @param birthPlace Place of birth.
-    /// @param height Height.
     /// @return The token ID of the newly minted passport.
     function safeMint(
         address to,
-        string memory p_name,
-        string memory p_surname,
-        string memory nationality,
-        string memory birthDate,
-        string memory birthPlace,
-        string memory height
+        string memory pseudo,
+        string memory nationality
     ) public notPaused onlyOwner returns (uint256) {
         require(balanceOf(to) == 0, "This citizen has already a 6R passport");
 
         s_tokenIds++;
 
         //TODO : verification of correct data eg: nationality with Enum, date format)
-        s_tokenAttributes[s_tokenIds] =
-            PassportAttributes(p_name, p_surname, nationality, birthDate, birthPlace, height);
+        s_tokenAttributes[s_tokenIds] = PassportAttributes(pseudo, nationality);
 
         _safeMint(to, s_tokenIds);
 
-        emit MintPassport(s_tokenIds, to, p_name, p_surname);
+        emit MintPassport(s_tokenIds, to, pseudo);
 
         return s_tokenIds;
     }
@@ -166,7 +180,13 @@ contract SixRPassport is ERC721, Ownable {
     /// @notice Enables delegated mode for the caller, making them available to receive vote delegations.
     /// @dev Caller must own a passport, not already be a delegate, and not have delegated their own vote.
     ///      Cannot be called while the contract is paused (voting period active).
-    function enableDelegatedMode() public notPaused ownsValidPassport isNotDelegate(msg.sender) notDelegated {
+    function enableDelegatedMode()
+        public
+        notPaused
+        ownsValidPassport
+        isNotDelegate(msg.sender)
+        notDelegated
+    {
         s_delegatedMode[msg.sender] = true;
         emit DelegatedModeEnabled(msg.sender);
     }
@@ -175,7 +195,12 @@ contract SixRPassport is ERC721, Ownable {
     /// @dev Caller must own a passport and currently be in delegated mode.
     ///      Cannot be called while the contract is paused (voting period active).
     /// @custom:note Does not automatically revoke existing delegations from citizens who delegated to this address.
-    function disableDelegatedMode() public notPaused ownsValidPassport isDelegate(msg.sender) {
+    function disableDelegatedMode()
+        public
+        notPaused
+        ownsValidPassport
+        isDelegate(msg.sender)
+    {
         s_delegatedMode[msg.sender] = false;
         emit DelegatedModeDisabled(msg.sender);
     }
@@ -185,7 +210,9 @@ contract SixRPassport is ERC721, Ownable {
     ///      and the target must be in delegated mode. Increments the target's delegatePower by 1.
     ///      Cannot be called while the contract is paused (voting period active).
     /// @param to The address of the representative to delegate to.
-    function delegateVoteTo(address to)
+    function delegateVoteTo(
+        address to
+    )
         public
         notPaused
         ownsValidPassport
@@ -217,7 +244,9 @@ contract SixRPassport is ERC721, Ownable {
     ///      as ERC-721 trait attributes and a static IPFS image.
     /// @param tokenId The ID of the passport token.
     /// @return A data URI string in the format `data:application/json;base64,<encoded JSON>`.
-    function tokenURI(uint256 tokenId) public view override returns (string memory) {
+    function tokenURI(
+        uint256 tokenId
+    ) public view override returns (string memory) {
         // require(s_tokenAttributes[tokenId], "Token does not exist");
 
         PassportAttributes memory pAttr = s_tokenAttributes[tokenId];
@@ -232,26 +261,14 @@ contract SixRPassport is ERC721, Ownable {
                 '",',
                 '"description": "6R passport stored on-chain",',
                 '"attributes": [',
-                '{ "trait_type": "Name", "value": "',
-                pAttr.name,
+                '{ "trait_type": "Pseudo", "value": "',
+                pAttr.pseudo,
                 '" },',
-                '{ "trait_type": "Surname", "value": "',
-                pAttr.surname,
-                '" }',
                 '{ "trait_type": "Nationality", "value": "',
                 pAttr.nationality,
                 '" }',
-                '{ "trait_type": "BirthDate", "value": "',
-                pAttr.birthDate,
-                '" }',
-                '{ "trait_type": "BirthPlace", "value": "',
-                pAttr.birthPlace,
-                '" }',
-                '{ "trait_type": "Height", "value": "',
-                pAttr.height,
-                '" }',
                 "],",
-                '"image": "https://ipfs.io/ipfs/QmSVj85LTpa3nQSo2D7oq5XXKY9xQa4aSz5Rh2u2A5fLKf"',
+                '"image": "https://ipfs.io/ipfs/bafkreihaq34wyaut74plz32jqlicqzvfgawbb7l2b3p4phcpumgh4ictea"',
                 "}"
             )
         );
@@ -259,10 +276,11 @@ contract SixRPassport is ERC721, Ownable {
         // Encodage base64
         string memory encodedJson = Base64.encode(bytes(json));
 
-        return string(
-            // aderyn-ignore-next-line(abi-encode-packed-hash-collision)
-            abi.encodePacked("data:application/json;base64,", encodedJson)
-        );
+        return
+            string(
+                // aderyn-ignore-next-line(abi-encode-packed-hash-collision)
+                abi.encodePacked("data:application/json;base64,", encodedJson)
+            );
     }
 
     /// @notice Blocked. SixRPassport tokens are soulbound and cannot be transferred.
