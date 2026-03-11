@@ -54,11 +54,12 @@ contract OrchestratorTest is Test {
     }
 
     function mintThreePassports() public {
-        vm.startPrank(owner);
-        orchestrator.mintPassport(citizen_1, "Marc", "Francais");
-        orchestrator.mintPassport(citizen_2, "Jose", "Francais");
-        orchestrator.mintPassport(citizen_3, "Eva", "Francais");
-        vm.stopPrank();
+        vm.prank(citizen_1);
+        orchestrator.mintPassport("Marc", "Francais");
+        vm.prank(citizen_2);
+        orchestrator.mintPassport("Jose", "Francais");
+        vm.prank(citizen_3);
+        orchestrator.mintPassport("Eva", "Francais");
     }
 
     function createFirstProposal() public returns (uint256) {
@@ -200,10 +201,10 @@ contract OrchestratorTest is Test {
     function test_successfullElectionWithDelegation() public {
         address delegate_1 = address(0x10); // with vote
         address delegate_2 = address(0x11); //without vote
-        vm.startPrank(owner);
-        orchestrator.mintPassport(delegate_1, "Samantha", "Francais");
-        orchestrator.mintPassport(delegate_2, "Delpielo", "Francais");
-        vm.stopPrank();
+        vm.prank(delegate_1);
+        orchestrator.mintPassport("Samantha", "Francais");
+        vm.prank(delegate_2);
+        orchestrator.mintPassport("Delpielo", "Francais");
 
         vm.prank(delegate_1);
         passport.enableDelegatedMode();
@@ -248,10 +249,11 @@ contract OrchestratorTest is Test {
     function test_refusedElectionWithDelegation() public {
         address delegate_1 = address(0x10);
         address delegate_2 = address(0x11);
-        vm.startPrank(owner);
-        orchestrator.mintPassport(delegate_1, "Samantha", "Francais");
-        orchestrator.mintPassport(delegate_2, "Delpielo", "Francais");
-        vm.stopPrank();
+
+        vm.prank(delegate_1);
+        orchestrator.mintPassport("Samantha", "Francais");
+        vm.prank(delegate_2);
+        orchestrator.mintPassport("Delpielo", "Francais");
 
         vm.prank(delegate_1);
         passport.enableDelegatedMode();
@@ -452,30 +454,29 @@ contract OrchestratorTest is Test {
     function test_createPassportWhenVoteCreated() public {
         test_createProposal();
 
-        vm.prank(owner);
+        vm.prank(citizen_4);
         vm.expectEmit();
         emit MintPassport(4, citizen_4, "Paul");
-        orchestrator.mintPassport(citizen_4, "Paul", "Francais");
+        orchestrator.mintPassport("Paul", "Francais");
     }
 
     function test_cantCreatePassportWhenVoteOnGoing() public {
         vm.prank(citizen_1);
         uint256 id = createAndStartVotingProposal();
 
-        vm.prank(owner);
+        vm.prank(citizen_4);
         vm.expectRevert(
             "The passport contract is paused for now, no changing state allowed."
         );
-        orchestrator.mintPassport(citizen_4, "Paul", "Francais");
+        orchestrator.mintPassport("Paul", "Francais");
     }
 
     // Election with revoke delegate that has vote delegated
     function test_electionWithRevokedDelegateStatus() public {
         address delegate_1 = address(0x10);
 
-        vm.startPrank(owner);
-        orchestrator.mintPassport(delegate_1, "Samantha", "Francais");
-        vm.stopPrank();
+        vm.prank(delegate_1);
+        orchestrator.mintPassport("Samantha", "Francais");
 
         vm.prank(delegate_1);
         passport.enableDelegatedMode();
@@ -519,9 +520,8 @@ contract OrchestratorTest is Test {
     function test_electionWithPreviouslyRevokedDelegateStatus() public {
         address delegate_1 = address(0x10);
 
-        vm.startPrank(owner);
-        orchestrator.mintPassport(delegate_1, "Samantha", "Francais");
-        vm.stopPrank();
+        vm.prank(delegate_1);
+        orchestrator.mintPassport("Samantha", "Francais");
 
         vm.prank(delegate_1);
         passport.enableDelegatedMode();

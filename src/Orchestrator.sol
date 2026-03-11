@@ -51,18 +51,16 @@ contract Orchestrator is Ownable {
     //// Passport functionnalities /////
     // This could be also done without direct dependancy to the Orchestrator, but for what purpose ? Using passport in another context ?
 
-    /// @notice Mints a new SixRPassport SBT for a citizen.
-    /// @dev Only callable by the owner (admin). Each address can only hold one passport.
+    /// @notice Mints a new SixRPassport SBT for yourself
+    /// @dev Each address can only hold one passport.
     ///      Delegates to SixRPassport.safeMint.
-    /// @param to The address of the citizen receiving the passport.
     /// @param p_pseudo First name of the citizen.
     /// @param nationality Nationality of the citizen.
     function mintPassport(
-        address to,
         string memory p_pseudo,
         string memory nationality
-    ) external onlyOwner {
-        passport.safeMint(to, p_pseudo, nationality);
+    ) external {
+        passport.safeMint(msg.sender, p_pseudo, nationality);
     }
 
     //// Proposal functionnalities ////
@@ -77,11 +75,7 @@ contract Orchestrator is Ownable {
         string memory _title,
         string memory _description
     ) public ownsValidPassport returns (uint256) {
-        uint256 id = proposal.create(
-            msg.sender,
-            _title,
-            _description
-        );
+        uint256 id = proposal.create(msg.sender, _title, _description);
         return id;
     }
 
