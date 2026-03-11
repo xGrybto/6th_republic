@@ -72,18 +72,15 @@ contract Orchestrator is Ownable {
     ///      a new one can be created. Delegates to SixRProposal.create.
     /// @param _title Short title of the proposal.
     /// @param _description Detailed description of the proposal.
-    /// @param _category Domain category of the proposal (ECOLOGY, EDUCATION, ECONOMY, DEFENSE).
     /// @return The ID of the newly created proposal.
     function createProposal(
         string memory _title,
-        string memory _description,
-        Types.Category _category
+        string memory _description
     ) public ownsValidPassport returns (uint256) {
         uint256 id = proposal.create(
             msg.sender,
             _title,
-            _description,
-            _category
+            _description
         );
         return id;
     }
