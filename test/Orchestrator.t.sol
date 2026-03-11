@@ -63,6 +63,7 @@ contract OrchestratorTest is Test {
     }
 
     function createFirstProposal() public returns (uint256) {
+        vm.prank(owner);
         return
             orchestrator.createProposal(
                 "First proposal",
@@ -82,9 +83,8 @@ contract OrchestratorTest is Test {
     //            SIMPLE PROCESS          //
 
     function test_createProposal() public {
-        vm.prank(citizen_1);
-        vm.expectEmit(true, true, false, true);
-        emit Created(1, citizen_1, "First proposal");
+        vm.expectEmit();
+        emit Created(1, owner, "First proposal");
         uint256 id = createFirstProposal();
 
         (
@@ -99,12 +99,11 @@ contract OrchestratorTest is Test {
         assertEq(id, 1);
         assertEq(title, "First proposal");
         assertEq(description, "This is the first proposal");
-        assertEq(creator, citizen_1);
+        assertEq(creator, owner);
         assertEq(uint256(status), uint256(Types.Status.CREATED));
     }
 
     function test_createAndStartVotingProposal() public {
-        vm.prank(citizen_1);
         uint256 id = createFirstProposal();
 
         vm.warp(block.timestamp + PREPARATION_PERIOD + 1 seconds);
@@ -115,7 +114,6 @@ contract OrchestratorTest is Test {
     }
 
     function test_createButCantStartVoting() public {
-        vm.prank(citizen_1);
         uint256 id = createFirstProposal();
 
         vm.expectRevert("The vote is not open for voting yet");
@@ -123,7 +121,6 @@ contract OrchestratorTest is Test {
     }
 
     function test_voteProposal() public {
-        vm.prank(citizen_1);
         uint256 id = createAndStartVotingProposal();
 
         vm.prank(citizen_1);
@@ -145,7 +142,6 @@ contract OrchestratorTest is Test {
     }
 
     function test_cantVoteProposalThroughProposalContract() public {
-        vm.prank(citizen_1);
         uint256 id = createFirstProposal();
 
         vm.prank(citizen_1);
@@ -154,7 +150,6 @@ contract OrchestratorTest is Test {
     }
 
     function test_getVoters() public {
-        vm.prank(citizen_1);
         uint256 id = createAndStartVotingProposal();
 
         vm.prank(citizen_1);
@@ -178,7 +173,6 @@ contract OrchestratorTest is Test {
     }
 
     function test_getVote() public {
-        vm.prank(citizen_1);
         uint256 id = createAndStartVotingProposal();
 
         vm.prank(citizen_1);
@@ -217,7 +211,6 @@ contract OrchestratorTest is Test {
         vm.prank(citizen_2);
         passport.delegateVoteTo(delegate_1);
 
-        vm.prank(citizen_1);
         uint256 id = createAndStartVotingProposal();
 
         vm.prank(delegate_1);
@@ -266,7 +259,6 @@ contract OrchestratorTest is Test {
         vm.prank(citizen_2);
         passport.delegateVoteTo(delegate_2);
 
-        vm.prank(citizen_1);
         uint256 id = createAndStartVotingProposal();
 
         vm.prank(delegate_1);
@@ -298,10 +290,9 @@ contract OrchestratorTest is Test {
     //            PROPOSAL STATUS         //
 
     function test_cantCreateAProposalDuringOngoingProposal() public {
-        vm.prank(citizen_1);
         uint256 id = createAndStartVotingProposal();
 
-        vm.prank(citizen_2);
+        vm.prank(owner);
         vm.expectRevert("Current proposal is not yet voted");
         orchestrator.createProposal(
             "Second proposal",
@@ -310,7 +301,6 @@ contract OrchestratorTest is Test {
     }
 
     function test_createProposalAfterPreviousProposal() public {
-        vm.prank(citizen_1);
         uint256 id = createAndStartVotingProposal();
 
         vm.warp(block.timestamp + VOTING_PERIOD + 1 seconds);
@@ -322,9 +312,9 @@ contract OrchestratorTest is Test {
         // End the proposal by counting votes
         orchestrator.countVotes(id);
 
-        vm.prank(citizen_2);
+        vm.prank(owner);
         vm.expectEmit();
-        emit Created(2, citizen_2, "Second proposal");
+        emit Created(2, owner, "Second proposal");
         orchestrator.createProposal(
             "Second proposal",
             "This is the second proposal"
@@ -332,9 +322,9 @@ contract OrchestratorTest is Test {
     }
 
     function test_closeProposalWithoutVote() public {
-        vm.startPrank(citizen_1);
         uint256 id = createAndStartVotingProposal();
 
+        vm.startPrank(citizen_1);
         vm.warp(block.timestamp + VOTING_PERIOD + 1 seconds);
         // This call will close the vote of the proposal
         vm.expectEmit();
@@ -351,9 +341,9 @@ contract OrchestratorTest is Test {
     }
 
     function test_cantVoteClosedProposal() public {
-        vm.startPrank(citizen_1);
         uint256 id = createAndStartVotingProposal();
 
+        vm.startPrank(citizen_1);
         bool voted = orchestrator.voteProposal(id, Types.Vote.YES);
 
         assertEq(voted, true);
@@ -373,7 +363,6 @@ contract OrchestratorTest is Test {
     //            VOTING                  //
 
     function test_voteOneTime() public {
-        vm.prank(citizen_1);
         uint256 id = createAndStartVotingProposal();
 
         vm.prank(citizen_2);
@@ -385,7 +374,6 @@ contract OrchestratorTest is Test {
 
     //Vote two times => revert
     function test_voteTwoTimes() public {
-        vm.prank(citizen_1);
         uint256 id = createAndStartVotingProposal();
 
         vm.startPrank(citizen_2);
@@ -399,16 +387,20 @@ contract OrchestratorTest is Test {
 
     //Create proposal without passport
 
-    function test_createProposalWithoutPassport() public {
+    function test_createProposalWithoutBeingOwner() public {
         // Citizen 4 no passport
         vm.prank(citizen_4);
-        vm.expectRevert("The citizen doesn't own a SixRPassport SBT");
-        createFirstProposal();
+        vm.expectRevert(
+            "OwnableUnauthorizedAccount(0x0000000000000000000000000000000000000004)"
+        );
+        orchestrator.createProposal(
+            "First proposal",
+            "This is the first proposal"
+        );
     }
 
     //Vote without passport
     function test_voteWithoutPassport() public {
-        vm.prank(citizen_1);
         uint256 id = createAndStartVotingProposal();
 
         assertEq(passport.hasPassport(citizen_4), false);
@@ -427,7 +419,6 @@ contract OrchestratorTest is Test {
     }
 
     function test_cantDelegateWhenVoteOngoing() public {
-        vm.prank(citizen_2);
         uint256 id = createFirstProposal();
 
         assertEq(passport.paused(), false);
@@ -461,7 +452,6 @@ contract OrchestratorTest is Test {
     }
 
     function test_cantCreatePassportWhenVoteOnGoing() public {
-        vm.prank(citizen_1);
         uint256 id = createAndStartVotingProposal();
 
         vm.prank(citizen_4);
@@ -492,7 +482,6 @@ contract OrchestratorTest is Test {
         emit DelegatedModeDisabled(delegate_1);
         passport.disableDelegatedMode();
 
-        vm.prank(citizen_1);
         uint256 id = createAndStartVotingProposal();
 
         vm.prank(delegate_1);
@@ -541,7 +530,6 @@ contract OrchestratorTest is Test {
 
         vm.stopPrank();
 
-        vm.prank(citizen_1);
         uint256 id = createAndStartVotingProposal();
 
         vm.prank(delegate_1);

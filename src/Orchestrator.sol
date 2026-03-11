@@ -66,7 +66,7 @@ contract Orchestrator is Ownable {
     //// Proposal functionnalities ////
 
     /// @notice Creates a new proposal on behalf of the calling citizen.
-    /// @dev Caller must own a valid passport. The previous proposal must be in ENDED status before
+    /// @dev Caller must be the owner. The previous proposal must be in ENDED status before
     ///      a new one can be created. Delegates to SixRProposal.create.
     /// @param _title Short title of the proposal.
     /// @param _description Detailed description of the proposal.
@@ -74,7 +74,7 @@ contract Orchestrator is Ownable {
     function createProposal(
         string memory _title,
         string memory _description
-    ) public ownsValidPassport returns (uint256) {
+    ) public onlyOwner returns (uint256) {
         uint256 id = proposal.create(msg.sender, _title, _description);
         return id;
     }
