@@ -292,7 +292,7 @@ contract SixRPassport is ERC721, Ownable {
                 pAttr.nationality,
                 '" }',
                 "],",
-                '"image": "https://ipfs.io/ipfs/bafkreihaq34wyaut74plz32jqlicqzvfgawbb7l2b3p4phcpumgh4ictea"',
+                '"image": "https://ipfs.io/ipfs/bafkreiezyua6ixhguyedklrds6wyiniokeovqay2x6zvvvtzfdhw4p3o7e"',
                 "}"
             )
         );
