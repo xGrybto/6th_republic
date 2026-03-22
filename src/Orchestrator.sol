@@ -85,7 +85,7 @@ contract Orchestrator is Ownable {
     /// @param proposalId The ID of the proposal to transition to ONGOING status.
     function startVoting(uint256 proposalId) public {
         proposal.startVoting(proposalId);
-        passport.pauseContract(true);
+        passport.pauseDelegation(true);
     }
 
     /// @notice Casts a vote on an ongoing proposal on behalf of the calling citizen.
@@ -103,7 +103,7 @@ contract Orchestrator is Ownable {
         bool voted = proposal.vote(proposalId, msg.sender, vote);
 
         if (!voted) {
-            passport.pauseContract(false);
+            passport.pauseDelegation(false);
             (uint256 yes_count, uint256 no_count) = countVotes(proposalId);
             emit ElectionResult(proposalId, yes_count, no_count);
         }

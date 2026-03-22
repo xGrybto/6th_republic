@@ -138,7 +138,7 @@ contract SixRPassport is ERC721, Ownable {
     /// @notice Pauses or unpauses the contract.
     /// @dev Only callable by the owner (Orchestrator). Used to freeze delegation changes during voting.
     /// @param b True to pause, false to unpause.
-    function pauseContract(bool b) public onlyOwner {
+    function pauseDelegation(bool b) public onlyOwner {
         paused = b;
     }
 
@@ -151,23 +151,47 @@ contract SixRPassport is ERC721, Ownable {
 
     // What if there is an error at the moment of a mint
 
+    /// @notice Validates a string for safe on-chain JSON embedding.
+    /// @dev Reverts if the string is empty, exceeds maxLen bytes, or contains characters
+    ///      that would break JSON structure: `"` (0x22), `\` (0x5C), or ASCII control
+    ///      characters (< 0x20 or 0x7F).
+    /// @param str The string to validate.
+    /// @param maxLen Maximum allowed byte length.
+    function _validateString(string memory str, uint256 maxLen) private pure {
+        bytes memory b = bytes(str);
+        require(b.length > 0, "String must not be empty");
+        require(b.length <= maxLen, "String exceeds maximum length");
+        bool valid = true;
+        for (uint256 i = 0; i < b.length; i++) {
+            bytes1 c = b[i];
+            if (c == 0x22 || c == 0x5C || uint8(c) < 0x20 || c == 0x7F) {
+                valid = false;
+                break;
+            }
+        }
+        require(valid, "String contains invalid characters");
+    }
+
     /// @notice Mints a new passport SBT to the specified citizen address.
     /// @dev Only callable by the owner (Orchestrator). Reverts if the recipient already holds a passport.
     ///      Token metadata is stored fully on-chain and exposed via tokenURI.
+    ///      Pseudo and nationality are validated to prevent JSON injection in tokenURI.
     /// @param to The address of the citizen receiving the passport.
-    /// @param pseudo Pseudo.
-    /// @param nationality Nationality (free-form string, format not enforced on-chain).
+    /// @param pseudo Pseudo (max 32 characters, no `"` or `\` or control characters).
+    /// @param nationality Nationality (max 50 characters, same restrictions).
     /// @return The token ID of the newly minted passport.
     function safeMint(
         address to,
         string memory pseudo,
         string memory nationality
-    ) public notPaused onlyOwner returns (uint256) {
+    ) public onlyOwner returns (uint256) {
         require(balanceOf(to) == 0, "This citizen has already a 6R passport");
+
+        _validateString(pseudo, 32);
+        _validateString(nationality, 50);
 
         s_tokenIds++;
 
-        //TODO : verification of correct data eg: nationality with Enum, date format)
         s_tokenAttributes[s_tokenIds] = PassportAttributes(pseudo, nationality);
 
         _safeMint(to, s_tokenIds);

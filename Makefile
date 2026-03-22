@@ -30,16 +30,13 @@ format :; forge fmt
 
 anvil :; anvil -m 'test test test test test test test test test test test junk' --steps-tracing --block-time 1
 
-deploy:
-	@forge script script/DeployMyToken.s.sol:DeployMyToken --rpc-url http://localhost:8545 --private-key $(DEFAULT_ANVIL_KEY) --broadcast
-
 deploy-anvil:
 	@forge script script/DeploySixRPassport.s.sol:DeploySixRPassport --rpc-url http://localhost:8545 --private-key $(DEFAULT_ANVIL_KEY) --broadcast
 
-deploy-sepolia:
+deploy-sepolia-passport:
 	@forge script script/DeploySixRPassport.s.sol:DeploySixRPassport --rpc-url $(SEPOLIA_RPC_URL) --account GrybtoBuidl --broadcast
 
-deploy-orchestrator-sepolia:
+deploy-sepolia:
 	@forge script script/DeployOrchestrator.s.sol:DeployOrchestrator --rpc-url $(SEPOLIA_RPC_URL) --account GrybtoBuidl --broadcast
 
 # verify:

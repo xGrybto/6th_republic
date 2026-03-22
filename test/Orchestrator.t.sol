@@ -415,7 +415,7 @@ contract OrchestratorTest is Test {
     function test_pausePassportNotOwner() public {
         vm.prank(citizen_1);
         vm.expectRevert();
-        passport.pauseContract(true);
+        passport.pauseDelegation(true);
     }
 
     function test_cantDelegateWhenVoteOngoing() public {
@@ -451,13 +451,12 @@ contract OrchestratorTest is Test {
         orchestrator.mintPassport("Paul", "Francais");
     }
 
-    function test_cantCreatePassportWhenVoteOnGoing() public {
+    function test_canCreatePassportWhenVoteOnGoing() public {
         uint256 id = createAndStartVotingProposal();
 
         vm.prank(citizen_4);
-        vm.expectRevert(
-            "The passport contract is paused for now, no changing state allowed."
-        );
+        vm.expectEmit();
+        emit MintPassport(4, citizen_4, "Paul");
         orchestrator.mintPassport("Paul", "Francais");
     }
 
