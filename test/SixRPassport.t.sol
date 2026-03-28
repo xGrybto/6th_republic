@@ -33,8 +33,14 @@ contract SixRPassportTest is Test {
     address citizen_3 = address(0x03);
 
     function setUp() public {
-        vm.prank(owner);
+        vm.startPrank(owner);
         sixRContract = new SixRPassport();
+        string[] memory colors = new string[](3);
+        colors[0] = "Rouge";
+        colors[1] = "Bleu";
+        colors[2] = "Vert";
+        sixRContract.setImageConfig("ipfs://QmTest/", colors);
+        vm.stopPrank();
     }
 
     function setUpC1() public {
@@ -216,15 +222,38 @@ contract SixRPassportTest is Test {
         sixRContract.delegateVoteTo(citizen_2);
     }
 
-    // function test_tokenURI() public {
-    //     setUpC1();
-    //     string memory tokenURI = sixRContract.tokenURI(1);
+    function test_getPassportAttributes() public {
+        setUpC1();
+        (string memory pseudo, string memory nationality, string memory color) =
+            sixRContract.getPassportAttributes(citizen_1);
 
-    //     assertEq(
-    //         bytes(tokenURI),
-    //         bytes(
-    //             "data:application/json;base64,eyJuYW1lIjogIlNpeFJQYXNzcG9ydCBORlQgIzEiLCJkZXNjcmlwdGlvbiI6ICI2UiBwYXNzcG9ydCBzdG9yZWQgb24tY2hhaW4iLCJhdHRyaWJ1dGVzIjogW3sgInRyYWl0X3R5cGUiOiAiTmFtZSIsICJ2YWx1ZSI6ICJNYXJjIiB9LHsgInRyYWl0X3R5cGUiOiAiU3VybmFtZSIsICJ2YWx1ZSI6ICJKT1RFIiB9eyAidHJhaXRfdHlwZSI6ICJOYXRpb25hbGl0eSIsICJ2YWx1ZSI6ICJGcmFuY2FpcyIgfXsgInRyYWl0X3R5cGUiOiAiQmlydGhEYXRlIiwgInZhbHVlIjogIjAxLzA1LzIwMDAiIH17ICJ0cmFpdF90eXBlIjogIkJpcnRoUGxhY2UiLCAidmFsdWUiOiAiTGlsbGUiIH17ICJ0cmFpdF90eXBlIjogIkhlaWdodCIsICJ2YWx1ZSI6ICIybTA1IiB9XSwiaW1hZ2UiOiAiaHR0cHM6Ly9pcGZzLmlvL2lwZnMvUW1TVmo4NUxUcGEzblFTbzJEN29xNVhYS1k5eFFhNGFTejVSaDJ1MkE1ZkxLZiJ9"
-    //         )
-    //     );
-    // }
+        assertEq(pseudo, "Marc");
+        assertEq(nationality, "Francais");
+        assertTrue(
+            keccak256(bytes(color)) == keccak256(bytes("Rouge")) ||
+            keccak256(bytes(color)) == keccak256(bytes("Bleu"))  ||
+            keccak256(bytes(color)) == keccak256(bytes("Vert")),
+            "Color must be one of the configured colors"
+        );
+    }
+
+    function test_getPassportAttributesRevertsWithoutPassport() public {
+        vm.expectRevert("This citizen has no passport");
+        sixRContract.getPassportAttributes(citizen_1);
+    }
+
+    function test_getTokenURIStartsWithDataPrefix() public {
+        setUpC1();
+        string memory uri = sixRContract.getTokenURI(citizen_1);
+        bytes memory uriBytes = bytes(uri);
+        bytes memory prefix = bytes("data:application/json;base64,");
+        for (uint256 i = 0; i < prefix.length; i++) {
+            assertEq(uriBytes[i], prefix[i], "tokenURI must start with data:application/json;base64,");
+        }
+    }
+
+    function test_getTokenURIRevertsWithoutPassport() public {
+        vm.expectRevert("This citizen has no passport");
+        sixRContract.getTokenURI(citizen_1);
+    }
 }

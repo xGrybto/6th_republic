@@ -7,9 +7,14 @@ import {Orchestrator} from "../src/Orchestrator.sol";
 
 contract DeployOrchestrator is Script {
     function run() external returns (Orchestrator) {
+        string memory baseImageURI = vm.envString("PASSPORT_BASE_IMAGE_URI");
+        string[] memory imageColors = vm.envString("PASSPORT_IMAGE_COLORS", ",");
+
         vm.startBroadcast();
         Orchestrator orchestrator = new Orchestrator();
+        orchestrator.setPassportImageConfig(baseImageURI, imageColors);
         vm.stopBroadcast();
+
         return orchestrator;
     }
 }

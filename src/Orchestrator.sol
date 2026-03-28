@@ -51,6 +51,18 @@ contract Orchestrator is Ownable {
     //// Passport functionnalities /////
     // This could be also done without direct dependancy to the Orchestrator, but for what purpose ? Using passport in another context ?
 
+    /// @notice Configures the IPFS image base URI and color list for passport NFTs.
+    /// @dev Only callable by the owner. Must be called before the first mint.
+    ///      Delegates to SixRPassport.setImageConfig.
+    /// @param baseImageURI Base IPFS URI ending with "/" (e.g. "ipfs://QmBaseHash/").
+    /// @param imageColors Array of color names matching the images (1.svg, 2.svg, ...).
+    function setPassportImageConfig(
+        string memory baseImageURI,
+        string[] memory imageColors
+    ) external onlyOwner {
+        passport.setImageConfig(baseImageURI, imageColors);
+    }
+
     /// @notice Mints a new SixRPassport SBT for yourself
     /// @dev Each address can only hold one passport.
     ///      Delegates to SixRPassport.safeMint.

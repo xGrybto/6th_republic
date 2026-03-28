@@ -53,12 +53,21 @@ contract SixRPassport is ERC721, Ownable {
     struct PassportAttributes {
         string pseudo;
         string nationality;
+        uint256 imageIndex;
     }
 
     /// @dev Internal counter for token IDs. Incremented before each mint (starts at 1).
     uint256 private s_tokenIds;
     /// @dev Maps token ID to its on-chain passport attributes.
     mapping(uint256 => PassportAttributes) private s_tokenAttributes;
+    /// @dev Maps a citizen's address to their passport token ID. Set at mint time.
+    mapping(address => uint256) private s_tokenIdByAddress;
+
+    /// @dev Base IPFS URI for passport images (e.g. "ipfs://QmBaseHash/").
+    ///      Images are named 1.svg, 2.svg, ... and selected pseudo-randomly at mint.
+    string private s_baseImageURI;
+    /// @dev Color names indexed in the same order as the images (1.svg → index 0, 2.svg → index 1, ...).
+    string[] private s_imageColors;
 
     // Delegation attributes
     /// @notice Maps a citizen's address to their chosen representative's address.
@@ -131,7 +140,7 @@ contract SixRPassport is ERC721, Ownable {
     }
 
     /// @notice Initializes the ERC-721 token with name "6RVote" and symbol "6R".
-    constructor() ERC721("6RVote", "6R") Ownable(msg.sender) {
+    constructor() ERC721("6R Passport", "6R") Ownable(msg.sender) {
         paused = false;
     }
 
@@ -172,9 +181,25 @@ contract SixRPassport is ERC721, Ownable {
         require(valid, "String contains invalid characters");
     }
 
+    /// @notice Sets the base IPFS URI and color list for passport images.
+    /// @dev Only callable by the owner. Must be called before the first mint.
+    ///      Images must be named 1.svg, 2.svg, ... on IPFS.
+    ///      The colors array must match the image count (index 0 → 1.svg, index 1 → 2.svg, ...).
+    /// @param baseImageURI Base IPFS URI ending with "/" (e.g. "ipfs://QmBaseHash/").
+    /// @param imageColors Array of color names in the same order as the images.
+    function setImageConfig(
+        string memory baseImageURI,
+        string[] memory imageColors
+    ) public onlyOwner {
+        require(imageColors.length > 0, "At least one image required");
+        s_baseImageURI = baseImageURI;
+        s_imageColors = imageColors;
+    }
+
     /// @notice Mints a new passport SBT to the specified citizen address.
-    /// @dev Only callable by the owner (Orchestrator). Reverts if the recipient already holds a passport.
-    ///      Token metadata is stored fully on-chain and exposed via tokenURI.
+    /// @dev Only callable by the owner (Orchestrator). Reverts if the recipient already holds a passport
+    ///      or if image config has not been set. Pseudo-randomly selects an image from the IPFS folder
+    ///      using block.timestamp, recipient address, and token ID as entropy.
     ///      Pseudo and nationality are validated to prevent JSON injection in tokenURI.
     /// @param to The address of the citizen receiving the passport.
     /// @param pseudo Pseudo (max 32 characters, no `"` or `\` or control characters).
@@ -186,13 +211,24 @@ contract SixRPassport is ERC721, Ownable {
         string memory nationality
     ) public onlyOwner returns (uint256) {
         require(balanceOf(to) == 0, "This citizen has already a 6R passport");
+        require(s_imageColors.length > 0, "Image config not set");
 
         _validateString(pseudo, 32);
         _validateString(nationality, 50);
 
         s_tokenIds++;
 
-        s_tokenAttributes[s_tokenIds] = PassportAttributes(pseudo, nationality);
+        uint256 imageIndex = uint256(
+            // aderyn-ignore-next-line(weak-randomness)
+            keccak256(abi.encodePacked(block.timestamp, to, s_tokenIds))
+        ) % s_imageColors.length;
+
+        s_tokenAttributes[s_tokenIds] = PassportAttributes(
+            pseudo,
+            nationality,
+            imageIndex
+        );
+        s_tokenIdByAddress[to] = s_tokenIds;
 
         _safeMint(to, s_tokenIds);
 
@@ -263,47 +299,86 @@ contract SixRPassport is ERC721, Ownable {
         emit RevokeDelegationTo(msg.sender, revokedAddress);
     }
 
+    /// @notice Returns the passport attributes of a citizen from their address.
+    /// @param citizen The address of the citizen.
+    /// @return pseudo The citizen's pseudo.
+    /// @return nationality The citizen's nationality.
+    /// @return color The color name associated with the citizen's passport image.
+    function getPassportAttributes(
+        address citizen
+    )
+        external
+        view
+        returns (
+            string memory pseudo,
+            string memory nationality,
+            string memory color
+        )
+    {
+        require(hasPassport(citizen), "This citizen has no passport");
+        PassportAttributes memory attrs = s_tokenAttributes[
+            s_tokenIdByAddress[citizen]
+        ];
+        return (
+            attrs.pseudo,
+            attrs.nationality,
+            s_imageColors[attrs.imageIndex]
+        );
+    }
+
+    /// @notice Returns the full tokenURI (Base64 JSON metadata) of a citizen from their address.
+    /// @param citizen The address of the citizen.
+    /// @return The tokenURI string in the format `data:application/json;base64,<encoded JSON>`.
+    function getTokenURI(
+        address citizen
+    ) external view returns (string memory) {
+        require(hasPassport(citizen), "This citizen has no passport");
+        return tokenURI(s_tokenIdByAddress[citizen]);
+    }
+
     /// @notice Returns the on-chain Base64-encoded JSON metadata URI for a given passport token.
-    /// @dev Metadata is fully on-chain (no external URI). The JSON includes all PassportAttributes
-    ///      as ERC-721 trait attributes and a static IPFS image.
+    /// @dev JSON is generated fully on-chain and follows the OpenSea metadata standard.
+    ///      The image field points to the IPFS folder set via setImageConfig, using the
+    ///      pseudo-randomly assigned imageIndex stored at mint time.
     /// @param tokenId The ID of the passport token.
     /// @return A data URI string in the format `data:application/json;base64,<encoded JSON>`.
     function tokenURI(
         uint256 tokenId
     ) public view override returns (string memory) {
-        // require(s_tokenAttributes[tokenId], "Token does not exist");
-
         PassportAttributes memory pAttr = s_tokenAttributes[tokenId];
 
-        // Génération du JSON
         string memory json = string(
             // aderyn-ignore-next-line(abi-encode-packed-hash-collision)
             abi.encodePacked(
-                "{",
-                '"name": "SixRPassport NFT #',
+                '{"name": "6R Passport SBT #',
                 tokenId.toString(),
                 '",',
                 '"description": "6R passport stored on-chain",',
+                '"image": "',
+                s_baseImageURI,
+                pAttr.imageIndex.toString(),
+                '.svg",',
                 '"attributes": [',
-                '{ "trait_type": "Pseudo", "value": "',
+                '{"trait_type": "Pseudo", "value": "',
                 pAttr.pseudo,
-                '" },',
-                '{ "trait_type": "Nationality", "value": "',
+                '"},',
+                '{"trait_type": "Nationality", "value": "',
                 pAttr.nationality,
-                '" }',
-                "],",
-                '"image": "https://ipfs.io/ipfs/bafkreiezyua6ixhguyedklrds6wyiniokeovqay2x6zvvvtzfdhw4p3o7e"',
-                "}"
+                '"},',
+                '{"trait_type": "Color", "value": "',
+                s_imageColors[pAttr.imageIndex],
+                '"}',
+                "]}"
             )
         );
-
-        // Encodage base64
-        string memory encodedJson = Base64.encode(bytes(json));
 
         return
             string(
                 // aderyn-ignore-next-line(abi-encode-packed-hash-collision)
-                abi.encodePacked("data:application/json;base64,", encodedJson)
+                abi.encodePacked(
+                    "data:application/json;base64,",
+                    Base64.encode(bytes(json))
+                )
             );
     }
 

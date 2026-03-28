@@ -46,10 +46,16 @@ contract OrchestratorTest is Test {
     address citizen_4 = address(0x04);
 
     function setUp() public {
-        vm.prank(owner);
+        vm.startPrank(owner);
         orchestrator = new Orchestrator();
         passport = SixRPassport(orchestrator.passport());
         proposal = SixRProposal(orchestrator.proposal());
+        string[] memory colors = new string[](3);
+        colors[0] = "Rouge";
+        colors[1] = "Bleu";
+        colors[2] = "Vert";
+        orchestrator.setPassportImageConfig("ipfs://QmTest/", colors);
+        vm.stopPrank();
         mintThreePassports();
     }
 
