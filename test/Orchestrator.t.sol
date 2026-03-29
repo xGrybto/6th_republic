@@ -12,8 +12,8 @@ contract OrchestratorTest is Test {
     SixRProposal private proposal;
     Orchestrator private orchestrator;
 
-    uint256 constant VOTING_PERIOD = 30 minutes;
-    uint256 constant PREPARATION_PERIOD = 10 minutes;
+    uint256 constant VOTING_PERIOD = 10 hours;
+    uint256 constant PREPARATION_PERIOD = 1 minutes;
 
     event MintPassport(
         uint256 indexed passportId,

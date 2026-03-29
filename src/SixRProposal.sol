@@ -17,10 +17,10 @@ contract SixRProposal is Ownable {
     using Types for Types.Status;
 
     /// @notice Duration of the voting window after startVoting is called.
-    uint256 public constant VOTING_PERIOD = 30 minutes;
+    uint256 public constant VOTING_PERIOD = 10 hours;
 
     /// @notice Minimum delay between proposal creation and the opening of the voting window.
-    uint256 public constant PREPARATION_PERIOD = 10 minutes;
+    uint256 public constant PREPARATION_PERIOD = 1 minutes;
 
     /// @notice Emitted when a new proposal is created.
     /// @param proposalId The ID of the newly created proposal.
