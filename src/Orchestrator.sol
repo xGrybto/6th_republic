@@ -51,34 +51,30 @@ contract Orchestrator is Ownable {
     //// Passport functionnalities /////
     // This could be also done without direct dependancy to the Orchestrator, but for what purpose ? Using passport in another context ?
 
+    /// @notice Configures the IPFS image base URI and color list for passport NFTs.
+    /// @dev Only callable by the owner. Must be called before the first mint.
+    ///      Delegates to SixRPassport.setImageConfig.
+    /// @param baseImageURI Base IPFS URI ending with "/" (e.g. "ipfs://QmBaseHash/").
+    /// @param imageNames Array of color names matching the images (1.svg, 2.svg, ...).
+    function setPassportImageConfig(
+        string memory baseImageURI,
+        string[] memory imageNames
+    ) external onlyOwner {
+        passport.setImageConfig(baseImageURI, imageNames);
+    }
+
     /// @notice Mints a new SixRPassport SBT for a citizen.
     /// @dev Only callable by the owner (admin). Each address can only hold one passport.
     ///      Delegates to SixRPassport.safeMint.
     /// @param to The address of the citizen receiving the passport.
-    /// @param p_name First name of the citizen.
-    /// @param p_surname Last name of the citizen.
-    /// @param nationality Nationality of the citizen.
-    /// @param birthDate Date of birth (free-form string, format not enforced on-chain).
-    /// @param birthPlace Place of birth.
-    /// @param height Height of the citizen.
+    /// @param _firstName First name of the citizen.
+    /// @param _lastName Last name of the citizen.
     function mintPassport(
         address to,
-        string memory p_name,
-        string memory p_surname,
-        string memory nationality,
-        string memory birthDate,
-        string memory birthPlace,
-        string memory height
+        string memory _firstName,
+        string memory _lastName
     ) public onlyOwner {
-        passport.safeMint(
-            to,
-            p_name,
-            p_surname,
-            nationality,
-            birthDate,
-            birthPlace,
-            height
-        );
+        passport.safeMint(to, _firstName, _lastName);
     }
 
     //// Proposal functionnalities ////

@@ -18,9 +18,14 @@ contract SixRPassport is ERC721, Ownable {
     /// @notice Emitted when a new passport is minted for a citizen.
     /// @param passportId The token ID of the newly minted passport.
     /// @param citizen The address of the citizen receiving the passport.
-    /// @param firstname First name stored in the passport.
-    /// @param lastname Last name stored in the passport.
-    event MintPassport(uint256 indexed passportId, address indexed citizen, string firstname, string lastname);
+    /// @param firstName First name stored in the passport.
+    /// @param lastName Last name stored in the passport.
+    event MintPassport(
+        uint256 indexed passportId,
+        address indexed citizen,
+        string firstName,
+        string lastName
+    );
 
     /// @notice Emitted when a citizen enables delegated mode, making themselves available as a representative.
     /// @param citizen The address that enabled delegated mode.
@@ -33,27 +38,38 @@ contract SixRPassport is ERC721, Ownable {
     /// @notice Emitted when a citizen delegates their vote to a representative.
     /// @param citizen The address delegating their vote.
     /// @param delegatedCitizen The address of the representative receiving the delegation.
-    event DelegationTo(address indexed citizen, address indexed delegatedCitizen);
+    event DelegationTo(
+        address indexed citizen,
+        address indexed delegatedCitizen
+    );
 
     /// @notice Emitted when a citizen revokes their vote delegation.
     /// @param citizen The address revoking the delegation.
     /// @param delegatedCitizen The address of the representative whose power is decremented.
-    event RevokeDelegationTo(address indexed citizen, address indexed delegatedCitizen);
+    event RevokeDelegationTo(
+        address indexed citizen,
+        address indexed delegatedCitizen
+    );
 
     /// @notice On-chain identity attributes stored per passport token.
     struct PassportAttributes {
-        string name;
-        string surname;
-        string nationality;
-        string birthDate;
-        string birthPlace;
-        string height;
+        string firstName;
+        string lastName;
+        uint256 imageIndex;
     }
 
     /// @dev Internal counter for token IDs. Incremented before each mint (starts at 1).
     uint256 private s_tokenIds;
     /// @dev Maps token ID to its on-chain passport attributes.
     mapping(uint256 => PassportAttributes) private s_tokenAttributes;
+    /// @dev Maps a citizen's address to their passport token ID. Set at mint time.
+    mapping(address => uint256) private s_tokenIdByAddress;
+
+    /// @dev Base IPFS URI for passport images (e.g. "ipfs://QmBaseHash/").
+    ///      Images are named 1.svg, 2.svg, ... and selected pseudo-randomly at mint.
+    string private s_baseImageURI;
+    /// @dev Image names indexed in the same order as the images (1.svg → index 0, 2.svg → index 1, ...).
+    string[] private s_imageName;
 
     // Delegation attributes
     /// @notice Maps a citizen's address to their chosen representative's address.
@@ -71,94 +87,100 @@ contract SixRPassport is ERC721, Ownable {
 
     /// @notice Restricts access to citizens who own a valid SixRPassport SBT.
     modifier ownsValidPassport() {
-        require(hasPassport(msg.sender), "The citizen doesn't own a SixRPassport SBT");
+        require(
+            hasPassport(msg.sender),
+            "The citizen doesn't own a SixRPassport SBT"
+        );
         _;
     }
 
     /// @notice Prevents state-changing calls while the contract is paused (during a voting period).
     modifier notPaused() {
-        require(!paused, "The passport contract is paused for now, no changing state allowed.");
+        require(
+            !paused,
+            "The passport contract is paused for now, no changing state allowed."
+        );
         _;
     }
 
     /// @notice Ensures the given address has enabled delegated mode.
     /// @param delegate The address to check.
     modifier isDelegate(address delegate) {
-        require(s_delegatedMode[delegate] == true, "This citizen is not a delegate");
+        require(
+            s_delegatedMode[delegate] == true,
+            "This citizen is not a delegate"
+        );
         _;
     }
 
     /// @notice Ensures the given address has not enabled delegated mode.
     /// @param delegate The address to check.
     modifier isNotDelegate(address delegate) {
-        require(s_delegatedMode[delegate] == false, "This citizen is a delegate");
+        require(
+            s_delegatedMode[delegate] == false,
+            "This citizen is a delegate"
+        );
         _;
     }
 
     /// @notice Ensures the caller has an active vote delegation.
     modifier delegated() {
-        require(s_representatives[msg.sender] != address(0), "Your vote is not delegated");
+        require(
+            s_representatives[msg.sender] != address(0),
+            "Your vote is not delegated"
+        );
         _;
     }
 
     /// @notice Ensures the caller has not yet delegated their vote.
     modifier notDelegated() {
-        require(s_representatives[msg.sender] == address(0), "Your vote has already been delegated");
+        require(
+            s_representatives[msg.sender] == address(0),
+            "Your vote has already been delegated"
+        );
         _;
     }
 
     /// @notice Initializes the ERC-721 token with name "6RVote" and symbol "6R".
     constructor() ERC721("6RVote", "6R") Ownable(msg.sender) {
         paused = false;
+        s_tokenIds = 0;
     }
-
-    /// @notice Pauses or unpauses the contract.
-    /// @dev Only callable by the owner (Orchestrator). Used to freeze delegation changes during voting.
-    /// @param b True to pause, false to unpause.
-    function pauseContract(bool b) public onlyOwner {
-        paused = b;
-    }
-
-    /// @notice Returns whether the given address holds a valid SixRPassport.
-    /// @param user The address to check.
-    /// @return True if the address holds exactly one passport token.
-    function hasPassport(address user) public view returns (bool) {
-        return balanceOf(user) == 1;
-    }
-
-    // What if there is an error at the moment of a mint
 
     /// @notice Mints a new passport SBT to the specified citizen address.
     /// @dev Only callable by the owner (Orchestrator). Reverts if the recipient already holds a passport.
     ///      Token metadata is stored fully on-chain and exposed via tokenURI.
     /// @param to The address of the citizen receiving the passport.
-    /// @param p_name First name.
-    /// @param p_surname Last name.
-    /// @param nationality Nationality (free-form string, format not enforced on-chain).
-    /// @param birthDate Date of birth (free-form string, format not enforced on-chain).
-    /// @param birthPlace Place of birth.
-    /// @param height Height.
+    /// @param _firstName First name.
+    /// @param _lastName Last name.
     /// @return The token ID of the newly minted passport.
     function safeMint(
         address to,
-        string memory p_name,
-        string memory p_surname,
-        string memory nationality,
-        string memory birthDate,
-        string memory birthPlace,
-        string memory height
+        string memory _firstName,
+        string memory _lastName
     ) public notPaused onlyOwner returns (uint256) {
         require(balanceOf(to) == 0, "This citizen has already a 6R passport");
+        require(s_imageName.length > 0, "Image configuration not set");
 
-        s_tokenIds++;
+        _validateString(_firstName, 32);
+        _validateString(_lastName, 32);
 
-        //TODO : verification of correct data eg: nationality with Enum, date format)
-        s_tokenAttributes[s_tokenIds] =
-            PassportAttributes(p_name, p_surname, nationality, birthDate, birthPlace, height);
+        uint256 imageIndex = uint256(
+            // aderyn-ignore-next-line(weak-randomness)
+            keccak256(abi.encodePacked(block.timestamp, to, s_tokenIds))
+        ) % s_imageName.length;
+
+        s_tokenAttributes[++s_tokenIds] = PassportAttributes(
+            _firstName,
+            _lastName,
+            imageIndex
+        );
+
+        s_tokenIdByAddress[to] = s_tokenIds;
 
         _safeMint(to, s_tokenIds);
 
-        emit MintPassport(s_tokenIds, to, p_name, p_surname);
+        emit MintPassport(s_tokenIds, to, _firstName, _lastName);
 
         return s_tokenIds;
     }
@@ -166,7 +188,13 @@ contract SixRPassport is ERC721, Ownable {
     /// @notice Enables delegated mode for the caller, making them available to receive vote delegations.
     /// @dev Caller must own a passport, not already be a delegate, and not have delegated their own vote.
     ///      Cannot be called while the contract is paused (voting period active).
-    function enableDelegatedMode() public notPaused ownsValidPassport isNotDelegate(msg.sender) notDelegated {
+    function enableDelegatedMode()
+        public
+        notPaused
+        ownsValidPassport
+        isNotDelegate(msg.sender)
+        notDelegated
+    {
         s_delegatedMode[msg.sender] = true;
         emit DelegatedModeEnabled(msg.sender);
     }
@@ -175,7 +203,12 @@ contract SixRPassport is ERC721, Ownable {
     /// @dev Caller must own a passport and currently be in delegated mode.
     ///      Cannot be called while the contract is paused (voting period active).
     /// @custom:note Does not automatically revoke existing delegations from citizens who delegated to this address.
-    function disableDelegatedMode() public notPaused ownsValidPassport isDelegate(msg.sender) {
+    function disableDelegatedMode()
+        public
+        notPaused
+        ownsValidPassport
+        isDelegate(msg.sender)
+    {
         s_delegatedMode[msg.sender] = false;
         emit DelegatedModeDisabled(msg.sender);
     }
@@ -185,7 +218,9 @@ contract SixRPassport is ERC721, Ownable {
     ///      and the target must be in delegated mode. Increments the target's delegatePower by 1.
     ///      Cannot be called while the contract is paused (voting period active).
     /// @param to The address of the representative to delegate to.
-    function delegateVoteTo(address to)
+    function delegateVoteTo(
+        address to
+    )
         public
         notPaused
         ownsValidPassport
@@ -212,57 +247,142 @@ contract SixRPassport is ERC721, Ownable {
         emit RevokeDelegationTo(msg.sender, revokedAddress);
     }
 
+    /// @notice Pauses or unpauses the contract.
+    /// @dev Only callable by the owner (Orchestrator). Used to freeze delegation changes during voting.
+    /// @param b True to pause, false to unpause.
+    function pauseContract(bool b) public onlyOwner {
+        paused = b;
+    }
+
+    /// @notice Returns whether the given address holds a valid SixRPassport.
+    /// @param user The address to check.
+    /// @return True if the address holds exactly one passport token.
+    function hasPassport(address user) public view returns (bool) {
+        return balanceOf(user) == 1;
+    }
+
+    /// @notice Sets the base IPFS URI and color list for passport images.
+    /// @dev Only callable by the owner. Must be called before the first mint.
+    ///      Images must be named 1.svg, 2.svg, ... on IPFS.
+    ///      The colors array must match the image count (index 0 → 1.svg, index 1 → 2.svg, ...).
+    /// @param baseImageURI Base IPFS URI ending with "/" (e.g. "ipfs://QmBaseHash/").
+    /// @param imageName Array of image names in the same order as the images.
+    function setImageConfig(
+        string memory baseImageURI,
+        string[] memory imageName
+    ) public onlyOwner {
+        _validateString(baseImageURI, 100);
+        require(imageName.length > 0, "At least one image required");
+        s_baseImageURI = baseImageURI;
+        s_imageName = imageName;
+    }
+
+    /// @notice Validates a string for safe on-chain JSON embedding.
+    /// @dev Reverts if the string is empty, exceeds maxLen bytes, or contains characters
+    ///      that would break JSON structure: `"` (0x22), `\` (0x5C), or ASCII control
+    ///      characters (< 0x20 or 0x7F).
+    /// @param str The string to validate.
+    /// @param maxLen Maximum allowed byte length.
+    function _validateString(string memory str, uint256 maxLen) private pure {
+        bytes memory b = bytes(str);
+        require(b.length > 0, "String must not be empty");
+        require(b.length <= maxLen, "String exceeds maximum length");
+        bool valid = true;
+        for (uint256 i = 0; i < b.length; i++) {
+            bytes1 c = b[i];
+            if (c == 0x22 || c == 0x5C || uint8(c) < 0x20 || c == 0x7F) {
+                valid = false;
+                break;
+            }
+        }
+        require(valid, "String contains invalid characters");
+    }
+
+    /// @notice Returns the passport attributes of a citizen from their address.
+    /// @param citizen The address of the citizen.
+    /// @return firstName The citizen's first name.
+    /// @return lastName The citizen's last name.
+    /// @return imageName The image name associated with the citizen's passport image.
+    function getPassportAttributes(
+        address citizen
+    )
+        external
+        view
+        returns (
+            string memory firstName,
+            string memory lastName,
+            string memory imageName
+        )
+    {
+        require(hasPassport(citizen), "This citizen has no passport");
+        PassportAttributes memory passportAttributes = s_tokenAttributes[
+            s_tokenIdByAddress[citizen]
+        ];
+        return (
+            passportAttributes.firstName,
+            passportAttributes.lastName,
+            s_imageName[passportAttributes.imageIndex]
+        );
+    }
+
+    /// @notice Returns the full tokenURI (Base64 JSON metadata) of a citizen from their address.
+    /// @param citizen The address of the citizen.
+    /// @return The tokenURI string in the format `data:application/json;base64,<encoded JSON>`.
+    function getTokenURI(
+        address citizen
+    ) external view returns (string memory) {
+        require(hasPassport(citizen), "This citizen has no passport");
+        return tokenURI(s_tokenIdByAddress[citizen]);
+    }
+
     /// @notice Returns the on-chain Base64-encoded JSON metadata URI for a given passport token.
     /// @dev Metadata is fully on-chain (no external URI). The JSON includes all PassportAttributes
     ///      as ERC-721 trait attributes and a static IPFS image.
     /// @param tokenId The ID of the passport token.
     /// @return A data URI string in the format `data:application/json;base64,<encoded JSON>`.
-    function tokenURI(uint256 tokenId) public view override returns (string memory) {
-        // require(s_tokenAttributes[tokenId], "Token does not exist");
+    function tokenURI(
+        uint256 tokenId
+    ) public view override returns (string memory) {
+        require(tokenId <= s_tokenIds, "Token not minted yet");
 
-        PassportAttributes memory pAttr = s_tokenAttributes[tokenId];
+        PassportAttributes memory passportAttributes = s_tokenAttributes[
+            tokenId
+        ];
 
-        // Génération du JSON
+        // JSON generation
         string memory json = string(
             // aderyn-ignore-next-line(abi-encode-packed-hash-collision)
             abi.encodePacked(
-                "{",
-                '"name": "SixRPassport NFT #',
+                '{"name": "6R Passport SBT #',
                 tokenId.toString(),
                 '",',
                 '"description": "6R passport stored on-chain",',
+                '"image": "',
+                s_baseImageURI,
+                passportAttributes.imageIndex.toString(),
+                '.svg",',
                 '"attributes": [',
-                '{ "trait_type": "Name", "value": "',
-                pAttr.name,
-                '" },',
-                '{ "trait_type": "Surname", "value": "',
-                pAttr.surname,
-                '" }',
-                '{ "trait_type": "Nationality", "value": "',
-                pAttr.nationality,
-                '" }',
-                '{ "trait_type": "BirthDate", "value": "',
-                pAttr.birthDate,
-                '" }',
-                '{ "trait_type": "BirthPlace", "value": "',
-                pAttr.birthPlace,
-                '" }',
-                '{ "trait_type": "Height", "value": "',
-                pAttr.height,
-                '" }',
-                "],",
-                '"image": "https://ipfs.io/ipfs/QmSVj85LTpa3nQSo2D7oq5XXKY9xQa4aSz5Rh2u2A5fLKf"',
-                "}"
+                '{"trait_type": "First name", "value": "',
+                passportAttributes.firstName,
+                '"},',
+                '{"trait_type": "Last name", "value": "',
+                passportAttributes.lastName,
+                '"},',
+                '{"trait_type": "Image name", "value": "',
+                s_imageName[passportAttributes.imageIndex],
+                '"}',
+                "]}"
             )
         );
 
         // Encodage base64
         string memory encodedJson = Base64.encode(bytes(json));
 
-        return string(
-            // aderyn-ignore-next-line(abi-encode-packed-hash-collision)
-            abi.encodePacked("data:application/json;base64,", encodedJson)
-        );
+        return
+            string(
+                // aderyn-ignore-next-line(abi-encode-packed-hash-collision)
+                abi.encodePacked("data:application/json;base64,", encodedJson)
+            );
     }
 
     /// @notice Blocked. SixRPassport tokens are soulbound and cannot be transferred.

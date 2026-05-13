@@ -10,13 +10,6 @@ import {Test, console} from "forge-std/Test.sol";
 contract OrchestratorTest is Test {
     using Types for Types.Category;
 
-    SixRPassport private passport;
-    SixRProposal private proposal;
-    Orchestrator private orchestrator;
-
-    uint256 constant VOTING_PERIOD = 30 minutes;
-    uint256 constant PREPARATION_PERIOD = 10 minutes;
-
     event MintPassport(
         uint256 indexed passportId,
         address indexed citizen,
@@ -42,6 +35,16 @@ contract OrchestratorTest is Test {
 
     event DelegatedModeDisabled(address indexed citizen);
 
+    SixRPassport private passport;
+    SixRProposal private proposal;
+    Orchestrator private orchestrator;
+
+    uint256 constant VOTING_PERIOD = 30 minutes;
+    uint256 constant PREPARATION_PERIOD = 10 minutes;
+
+    string private baseImageURI = vm.envString("PASSPORT_BASE_IMAGE_URI");
+    string[] private imageColors = vm.envString("PASSPORT_IMAGE_COLORS", ",");
+
     address owner = address(0x010);
     address citizen_1 = address(0x01);
     address citizen_2 = address(0x02);
@@ -49,8 +52,10 @@ contract OrchestratorTest is Test {
     address citizen_4 = address(0x04);
 
     function setUp() public {
-        vm.prank(owner);
+        vm.startPrank(owner);
         orchestrator = new Orchestrator();
+        orchestrator.setPassportImageConfig(baseImageURI, imageColors);
+        vm.stopPrank();
         passport = SixRPassport(orchestrator.passport());
         proposal = SixRProposal(orchestrator.proposal());
         mintThreePassports();
@@ -58,33 +63,9 @@ contract OrchestratorTest is Test {
 
     function mintThreePassports() public {
         vm.startPrank(owner);
-        orchestrator.mintPassport(
-            citizen_1,
-            "Marc",
-            "JOTE",
-            "Francais",
-            "01/05/2000",
-            "Lille",
-            "2m05"
-        );
-        orchestrator.mintPassport(
-            citizen_2,
-            "Jose",
-            "Cuelva",
-            "Francais",
-            "27/09/1985",
-            "Biarritz",
-            "1m71"
-        );
-        orchestrator.mintPassport(
-            citizen_3,
-            "Eva",
-            "Mava",
-            "Francaise",
-            "01/11/2007",
-            "Biarritz",
-            "1m71"
-        );
+        orchestrator.mintPassport(citizen_1, "Marc", "JOTE");
+        orchestrator.mintPassport(citizen_2, "Jose", "Cuelva");
+        orchestrator.mintPassport(citizen_3, "Eva", "Mava");
         vm.stopPrank();
     }
 
@@ -232,24 +213,8 @@ contract OrchestratorTest is Test {
         address delegate_1 = address(0x10); // with vote
         address delegate_2 = address(0x11); //without vote
         vm.startPrank(owner);
-        orchestrator.mintPassport(
-            delegate_1,
-            "Samantha",
-            "Delo",
-            "Francais",
-            "04/10/1997",
-            "Quimper",
-            "1m66"
-        );
-        orchestrator.mintPassport(
-            delegate_2,
-            "Delpielo",
-            "Gator",
-            "Francais",
-            "31/12/1980",
-            "Rennes",
-            "1m76"
-        );
+        orchestrator.mintPassport(delegate_1, "Samantha", "Delo");
+        orchestrator.mintPassport(delegate_2, "Delpielo", "Gator");
         vm.stopPrank();
 
         vm.prank(delegate_1);
@@ -296,24 +261,8 @@ contract OrchestratorTest is Test {
         address delegate_1 = address(0x10);
         address delegate_2 = address(0x11);
         vm.startPrank(owner);
-        orchestrator.mintPassport(
-            delegate_1,
-            "Samantha",
-            "Delo",
-            "Francais",
-            "04/10/1997",
-            "Quimper",
-            "1m66"
-        );
-        orchestrator.mintPassport(
-            delegate_2,
-            "Delpielo",
-            "Gator",
-            "Francais",
-            "31/12/1980",
-            "Rennes",
-            "1m76"
-        );
+        orchestrator.mintPassport(delegate_1, "Samantha", "Delo");
+        orchestrator.mintPassport(delegate_2, "Delpielo", "Gator");
         vm.stopPrank();
 
         vm.prank(delegate_1);
@@ -520,15 +469,7 @@ contract OrchestratorTest is Test {
         vm.prank(owner);
         vm.expectEmit();
         emit MintPassport(4, citizen_4, "Paul", "Eymint");
-        orchestrator.mintPassport(
-            citizen_4,
-            "Paul",
-            "Eymint",
-            "Francais",
-            "09/02/1941",
-            "Brest",
-            "1m72"
-        );
+        orchestrator.mintPassport(citizen_4, "Paul", "Eymint");
     }
 
     function test_cantCreatePassportWhenVoteOnGoing() public {
@@ -539,15 +480,7 @@ contract OrchestratorTest is Test {
         vm.expectRevert(
             "The passport contract is paused for now, no changing state allowed."
         );
-        orchestrator.mintPassport(
-            citizen_4,
-            "Paul",
-            "Nepamint",
-            "Francais",
-            "09/02/1941",
-            "Brest",
-            "1m72"
-        );
+        orchestrator.mintPassport(citizen_4, "Paul", "Nepamint");
     }
 
     // Election with revoke delegate that has vote delegated
@@ -555,15 +488,7 @@ contract OrchestratorTest is Test {
         address delegate_1 = address(0x10);
 
         vm.startPrank(owner);
-        orchestrator.mintPassport(
-            delegate_1,
-            "Samantha",
-            "Delo",
-            "Francais",
-            "04/10/1997",
-            "Quimper",
-            "1m66"
-        );
+        orchestrator.mintPassport(delegate_1, "Samantha", "Delo");
         vm.stopPrank();
 
         vm.prank(delegate_1);
@@ -609,15 +534,7 @@ contract OrchestratorTest is Test {
         address delegate_1 = address(0x10);
 
         vm.startPrank(owner);
-        orchestrator.mintPassport(
-            delegate_1,
-            "Samantha",
-            "Delo",
-            "Francais",
-            "04/10/1997",
-            "Quimper",
-            "1m66"
-        );
+        orchestrator.mintPassport(delegate_1, "Samantha", "Delo");
         vm.stopPrank();
 
         vm.prank(delegate_1);
