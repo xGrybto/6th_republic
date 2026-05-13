@@ -13,7 +13,6 @@ import {Types} from "./Types.sol";
 ///      The ENDED state is also the default (zero-value), which is why proposalCounter starts at 1.
 contract SixRProposal is Ownable {
     using EnumerableMap for EnumerableMap.AddressToUintMap;
-    using Types for Types.Category;
     using Types for Types.Vote;
     using Types for Types.Status;
 
@@ -51,7 +50,6 @@ contract SixRProposal is Ownable {
     struct Proposal {
         string title;
         string description;
-        Types.Category category;
         address creator;
         /// @dev Timestamp of proposal creation (block.timestamp at creation).
         uint256 creationTime;
@@ -108,20 +106,17 @@ contract SixRProposal is Ownable {
     /// @param sender The address of the citizen creating the proposal (passed by the Orchestrator).
     /// @param _title Short title of the proposal.
     /// @param _description Detailed description of the proposal.
-    /// @param _category Domain category (ECOLOGY, EDUCATION, ECONOMY, DEFENSE).
     /// @return The ID of the newly created proposal.
     function create(
         address sender,
         string memory _title,
-        string memory _description,
-        Types.Category _category
+        string memory _description
     ) public onlyOwner isEnded(proposalCounter - 1) returns (uint256) {
         uint256 proposalId = proposalCounter;
 
         Proposal storage proposal = proposals[proposalId];
         proposal.title = _title;
         proposal.description = _description;
-        proposal.category = _category;
         proposal.creator = sender;
         proposal.creationTime = block.timestamp;
         proposal.status = Types.Status.CREATED;
@@ -242,7 +237,6 @@ contract SixRProposal is Ownable {
     /// @param proposalId The ID of the proposal to read.
     /// @return title The proposal title.
     /// @return description The proposal description.
-    /// @return category The domain category.
     /// @return creator The address of the proposal creator.
     /// @return creationTime The block timestamp at creation.
     /// @return votingTime The block timestamp when voting starts.
@@ -256,7 +250,6 @@ contract SixRProposal is Ownable {
         returns (
             string memory,
             string memory,
-            Types.Category category,
             address,
             uint256,
             uint256,
@@ -269,7 +262,6 @@ contract SixRProposal is Ownable {
         return (
             p.title,
             p.description,
-            p.category,
             p.creator,
             p.creationTime,
             p.votingTime,

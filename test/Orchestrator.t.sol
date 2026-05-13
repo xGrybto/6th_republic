@@ -8,8 +8,6 @@ import {Types} from "../src/Types.sol";
 import {Test, console} from "forge-std/Test.sol";
 
 contract OrchestratorTest is Test {
-    using Types for Types.Category;
-
     event MintPassport(
         uint256 indexed passportId,
         address indexed citizen,
@@ -73,8 +71,7 @@ contract OrchestratorTest is Test {
         return
             orchestrator.createProposal(
                 "First proposal",
-                "This is the first proposal",
-                Types.Category.ECOLOGY
+                "This is the first proposal"
             );
     }
 
@@ -98,7 +95,6 @@ contract OrchestratorTest is Test {
         (
             string memory title,
             string memory description,
-            Types.Category category,
             address creator,
             ,
             ,
@@ -108,7 +104,6 @@ contract OrchestratorTest is Test {
         assertEq(id, 1);
         assertEq(title, "First proposal");
         assertEq(description, "This is the first proposal");
-        assertEq(uint256(category), uint256(Types.Category.ECOLOGY));
         assertEq(creator, citizen_1);
         assertEq(uint256(status), uint256(Types.Status.CREATED));
     }
@@ -150,8 +145,7 @@ contract OrchestratorTest is Test {
         proposal.create(
             citizen_1,
             "First proposal",
-            "This is the first proposal",
-            Types.Category.ECOLOGY
+            "This is the first proposal"
         );
     }
 
@@ -315,8 +309,7 @@ contract OrchestratorTest is Test {
         vm.expectRevert("Current proposal is not yet voted");
         orchestrator.createProposal(
             "Second proposal",
-            "This is the second proposal",
-            Types.Category.EDUCATION
+            "This is the second proposal"
         );
     }
 
@@ -338,8 +331,7 @@ contract OrchestratorTest is Test {
         emit Created(2, citizen_2, "Second proposal");
         orchestrator.createProposal(
             "Second proposal",
-            "This is the second proposal",
-            Types.Category.EDUCATION
+            "This is the second proposal"
         );
     }
 
@@ -356,7 +348,7 @@ contract OrchestratorTest is Test {
         bool voted = orchestrator.voteProposal(id, Types.Vote.YES);
         assertEq(voted, false);
 
-        (, , , , , , Types.Status status, ) = proposal.get(id);
+        (, , , , , Types.Status status, ) = proposal.get(id);
         assertEq(uint256(status), uint256(Types.Status.ENDED));
 
         vm.stopPrank();
@@ -374,7 +366,7 @@ contract OrchestratorTest is Test {
         // This call will close the vote of the proposal
         bool voted_2 = orchestrator.voteProposal(id, Types.Vote.YES);
         assertEq(voted_2, false);
-        (, , , , , , Types.Status status, ) = proposal.get(id);
+        (, , , , , Types.Status status, ) = proposal.get(id);
         assertEq(uint256(status), uint256(Types.Status.ENDED));
         // This call will be refused because the status of the proposal
         vm.expectRevert("The vote is not ongoing");
